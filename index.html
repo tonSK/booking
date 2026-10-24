@@ -473,8 +473,6 @@
     // ค่าคงที่ของกติกา
     // =====================================================================
     const TZ = 'Asia/Bangkok';          // ใช้เขตเวลาไทยในการนับ "วันนี้" ไม่ว่าเปิดจากเครื่องไหน
-    const MIN_DAYS_USER_BOOK = 3;       // USER ต้องจองล่วงหน้าอย่างน้อย 3 วัน
-    const MIN_DAYS_USER_CANCEL = 1;     // USER ต้องยกเลิกล่วงหน้าอย่างน้อย 1 วัน
     const SYNC_INTERVAL_MS = 60000;     // ซิงค์อัตโนมัติทุก 60 วินาที
 
     // <helpers>
@@ -529,21 +527,20 @@
     // =====================================================================
     // State
     // =====================================================================
-    // ข้อมูลทั้งหมดมาจาก Google Sheets เท่านั้น (ไม่เก็บแคชข้อมูล/รหัสผ่านไว้ในเบราว์เซอร์)
     let rooms = [];
     let users = [];
     let bookings = [];
-    ['mr_rooms', 'mr_users', 'mr_bookings', 'mr_webapp_url'].forEach(k => removeLS(k)); // ล้างแคชรุ่นเก่า
-    let appLoaded = false;         // true เมื่อดึงข้อมูลครั้งแรกสำเร็จ
+    ['mr_rooms', 'mr_users', 'mr_bookings', 'mr_webapp_url'].forEach(k => removeLS(k));
+    let appLoaded = false;
 
     let currentUser = loadLS('mr_current_user', null);
     let currentViewDate = new Date();
     let selectedRoomId = null;
     let currentTab = 'monthly';
 
-    let inFlight = 0;              // จำนวนคำสั่งเขียนข้อมูลที่ยังไม่เสร็จ
-    let fetchSeq = 0;              // ลำดับการดึงข้อมูล (ใช้ทิ้งผลลัพธ์เก่า)
-    let pendingAddIds = new Set(); // booking ที่เพิ่งจอง รอยืนยันจากชีต
+    let inFlight = 0;
+    let fetchSeq = 0;
+    let pendingAddIds = new Set();
     let syncTimer = null;
 
     const Toast = Swal.mixin({
@@ -563,18 +560,17 @@
     function isRoomActive(r) { return String(r.status).trim().toUpperCase() === 'ACTIVE'; }
     function sameId(a, b) { return String(a).trim() === String(b).trim(); }
 
-    // จำนวนวันขั้นต่ำที่ต้องจองล่วงหน้า: Admin = วันนี้ (0), User = 3 วัน
-    function minBookingOffset() { return isAdmin() ? 0 : MIN_DAYS_USER_BOOK; }
+    function minBookingOffset() { return 0; }
     function canBookDate(dateStr) { return daysUntil(dateStr) >= minBookingOffset(); }
 
     function isOwner(b) { return !!currentUser && sameId(b.userId, currentUser.id); }
 
-    // Admin ยกเลิกได้ทุกรายการ / User ยกเลิกได้เฉพาะของตน และต้องล่วงหน้าอย่างน้อย 1 วัน
+    // ปรับให้สามารถยกเลิกการจองได้ตั้งแต่วันที่ปัจจุบันเป็นต้นไป (ไม่ให้ยกเลิกรายการย้อนหลังที่ผ่านมาแล้ว)
     function canCancelBooking(b) {
       if (!currentUser) return false;
-      if (isAdmin()) return true;
+      if (isAdmin()) return daysUntil(b.date) >= 0;
       if (!isOwner(b)) return false;
-      return daysUntil(b.date) >= MIN_DAYS_USER_CANCEL;
+      return daysUntil(b.date) >= 0;
     }
 
     function getBookingFor(roomId, dateStr, slot) {
@@ -620,7 +616,6 @@
       startAutoSync();
     };
 
-    // โหลดข้อมูลครั้งแรก: แสดงหน้าโหลดจนกว่าจะได้ข้อมูลจาก Google Sheets สำเร็จ
     const INITIAL_LOAD_TIMEOUT_MS = 25000;
     let initialLoadTimer = null;
 
@@ -816,7 +811,6 @@
       currentUser.password = newP;
       saveLS('mr_current_user', currentUser);
 
-      // ซิงค์กลับอัตโนมัติหลังบันทึกเสร็จ (ไม่ต้องสั่งดึงข้อมูลซ้ำตรงนี้ เพราะจะได้รหัสเก่ากลับมาทับ)
       sendToGoogleSheets('UPDATE_PASSWORD', { id: currentUser.id, newPassword: newP });
       closeChangePasswordModal();
       Swal.fire({ icon: 'success', title: 'เปลี่ยนรหัสผ่านสำเร็จ!' });
@@ -845,7 +839,7 @@
         Swal.fire({
           icon: 'warning',
           title: 'ไม่สามารถจองได้',
-          text: isAdmin() ? 'ไม่สามารถจองย้อนหลังได้' : 'สำหรับผู้ใช้งานทั่วไป ต้องทำการจองล่วงหน้าอย่างน้อย 3 วัน'
+          text: 'ไม่สามารถจองย้อนหลังได้'
         });
         return;
       }
@@ -884,7 +878,6 @@
     }
 
     function changeMonth(direction) {
-      // ตั้งวันที่เป็นวันที่ 1 ก่อน กันเดือนข้ามเมื่อวันนี้เป็นวันที่ 29-31
       currentViewDate = new Date(currentViewDate.getFullYear(), currentViewDate.getMonth() + direction, 1);
       renderMonthlyCalendar();
     }
@@ -955,7 +948,6 @@
         const diff = daysUntil(dateStr);
         const isPast = diff < 0;
 
-        // ปุ่มจอง: User ล็อกอินแล้ว -> แสดงตั้งแต่วันนี้+3 / Admin -> ตั้งแต่วันนี้ / ผู้เข้าชม -> ตั้งแต่วันนี้
         const canQuickBook = currentUser ? diff >= minBookingOffset() : diff >= 0;
 
         const mBk = room ? getBookingFor(room.id, dateStr, 'MORNING') : null;
@@ -1038,9 +1030,7 @@
       if (!roomId || !date) return;
 
       if (currentUser && !canBookDate(date)) {
-        warningEl.innerHTML = isAdmin()
-          ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i>ไม่สามารถจองย้อนหลังได้'
-          : '<i class="fa-solid fa-triangle-exclamation mr-1"></i>สำหรับ User ทั่วไป ต้องจองล่วงหน้าอย่างน้อย 3 วัน';
+        warningEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>ไม่สามารถจองย้อนหลังได้';
         warningEl.classList.remove('hidden');
       } else {
         warningEl.classList.add('hidden');
@@ -1098,12 +1088,11 @@
         Swal.fire({
           icon: 'error',
           title: 'ไม่สามารถจองได้',
-          text: isAdmin() ? 'ไม่สามารถจองย้อนหลังได้' : 'ผู้ใช้งานทั่วไปต้องทำการจองล่วงหน้าอย่างน้อย 3 วัน'
+          text: 'ไม่สามารถจองย้อนหลังได้'
         });
         return;
       }
 
-      // ตรวจซ้ำกับข้อมูลล่าสุด กันกรณีมีคนจองตัดหน้า
       const taken = slotsToBook.filter(s => getBookingFor(roomId, date, s));
       if (taken.length > 0) {
         Swal.fire({ icon: 'error', title: 'ช่วงเวลานี้ถูกจองไปแล้ว', text: 'กรุณาเลือกช่วงเวลาอื่น' });
@@ -1152,7 +1141,6 @@
         sendToGoogleSheets('ADD_BOOKING', newBooking);
       });
 
-
       closeBookingModal();
       Swal.fire({ icon: 'success', title: 'บันทึกการจองห้องประชุมสำเร็จ!' });
       renderMonthlyCalendar();
@@ -1166,7 +1154,6 @@
 
     function renderBookingsTable() {
       const tbody = document.getElementById('bookingsTableBody');
-      // เรียง: วันที่จอง (น้อย -> มาก) > ชื่อห้องประชุม (ก -> ฮ / A -> Z) > ช่วงเวลา (เช้าก่อนบ่าย)
       const roomNameOf = (b) => {
         const r = rooms.find(x => sameId(x.id, b.roomId));
         return String(r ? r.name : b.roomId);
@@ -1194,7 +1181,7 @@
         if (canCancelBooking(b)) {
           actionHtml = `<button data-id="${esc(b.id)}" onclick="deleteBooking(this.dataset.id)" class="text-red-500 hover:text-red-700 p-1" title="ยกเลิกการจอง"><i class="fa-solid fa-trash-can"></i></button>`;
         } else if (isOwner(b)) {
-          actionHtml = '<span class="text-slate-300" title="เลยกำหนดขอยกเลิก (ต้องล่วงหน้าอย่างน้อย 1 วัน)"><i class="fa-solid fa-lock"></i></span>';
+          actionHtml = '<span class="text-slate-300" title="เลยกำหนดขอยกเลิก (ไม่สามารถยกเลิกรายการย้อนหลังได้)"><i class="fa-solid fa-lock"></i></span>';
         }
 
         return `
@@ -1223,7 +1210,7 @@
         Swal.fire({
           icon: 'warning',
           title: 'ไม่สามารถยกเลิกได้',
-          text: 'ต้องยกเลิกล่วงหน้าอย่างน้อย 1 วัน หรือติดต่อผู้ดูแลระบบ'
+          text: 'ไม่สามารถยกเลิกรายการย้อนหลังที่ผ่านมาแล้วได้'
         });
         return;
       }
@@ -1327,7 +1314,6 @@
         rooms.push(payload);
         sendToGoogleSheets('ADD_ROOM', payload);
       }
-
 
       closeRoomModal();
       Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลห้องประชุมสำเร็จ' });
@@ -1514,7 +1500,6 @@
     // =====================================================================
     // Google Sheets communication
     // =====================================================================
-    // opts: { initial, onSuccess, onFail } ใช้กับการโหลดครั้งแรก
     function fetchDataFromSheets(showToast = false, opts = {}) {
       const seq = ++fetchSeq;
       const url = DEFAULT_WEB_APP_URL + '?action=GET_ALL_DATA&t=' + Date.now();
@@ -1525,8 +1510,8 @@
       };
 
       const onData = (data) => {
-        if (seq !== fetchSeq) return;                   // มีการดึงใหม่กว่าแล้ว ทิ้งผลเก่า
-        if (inFlight > 0 && !opts.initial) return;      // กำลังเขียนข้อมูลอยู่ รอรอบหลัง กันข้อมูลเก่าทับ
+        if (seq !== fetchSeq) return;
+        if (inFlight > 0 && !opts.initial) return;
         let ok = false;
         try { ok = processFetchedData(data, showToast); } catch (err) { console.error(err); }
         if (ok) {
@@ -1542,7 +1527,6 @@
         .catch(() => fetchViaJsonp(url, onData, showToast, fail));
     }
 
-    // สำรองสำหรับเบราว์เซอร์ที่ fetch ข้ามโดเมนไม่ได้ (เช่น Safari บางกรณี)
     function fetchViaJsonp(url, onData, showToast, onFail) {
       const old = document.getElementById('gas-jsonp-script');
       if (old) old.remove();
@@ -1606,7 +1590,6 @@
             };
           });
 
-        // ตรวจว่ารายการที่เพิ่งจองถูกบันทึกจริงหรือไม่ (เช่น ถูกคนอื่นจองตัดหน้า)
         if (pendingAddIds.size > 0) {
           const serverIds = new Set(bookings.map(b => b.id));
           let missing = 0;
@@ -1622,7 +1605,6 @@
         }
       }
 
-      // อัปเดตข้อมูลผู้ใช้ที่ล็อกอินอยู่ ถ้าบัญชีถูกลบให้ออกจากระบบ
       if (currentUser && users.length > 0) {
         const matched = users.find(u => sameId(u.id, currentUser.id));
         if (matched) {
@@ -1648,7 +1630,6 @@
       return true;
     }
 
-    // ส่งคำสั่งเขียนข้อมูล แล้วดึงข้อมูลล่าสุดกลับมาหลังคำสั่งสุดท้ายเสร็จ
     function sendToGoogleSheets(action, payload) {
       const params = new URLSearchParams();
       params.append('action', action);
