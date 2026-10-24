@@ -22,7 +22,7 @@
 
   <!-- EMBEDDED GOOGLE APPS SCRIPT URL -->
   <script>
-    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuw_p9zHyReXPmofQ1eNHZ-eaZxxvaE_6PT_5G0joaLX5yR9LNRX7uMESg5QuAYm_Jhw/exec";
+    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzj5EcAr-eI2DPicaM20RLqSJfvsAlzsLqlvfPGZywJumNcZ_YyWIJtqUE8rEDgh1n4wQ/exec";
   </script>
 
   <!-- Header & Navigation -->
@@ -48,19 +48,19 @@
     <div class="bg-indigo-950 px-4 border-t border-indigo-800/50">
       <div class="max-w-7xl mx-auto flex space-x-2 overflow-x-auto py-1">
         <button onclick="switchTab('monthly')" id="tab-monthly" class="nav-tab text-white bg-indigo-800 px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2">
-          <i class="fa-solid fa-calendar-month"></i>
+          <i class="fa-solid fa-calendar-days"></i>
           <span>ปฏิทินรายเดือน</span>
         </button>
         <button onclick="switchTab('list')" id="tab-list" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2">
           <i class="fa-solid fa-list-check"></i>
           <span>รายการจองทั้งหมด</span>
         </button>
-        <button id="tab-rooms-btn" onclick="switchTab('rooms')" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2 hidden">
+        <button id="tab-rooms" onclick="switchTab('rooms')" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2 hidden">
           <i class="fa-solid fa-door-open"></i>
           <span>จัดการห้องประชุม</span>
           <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold ml-1">Admin</span>
         </button>
-        <button id="tab-users-btn" onclick="switchTab('users')" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2 hidden">
+        <button id="tab-users" onclick="switchTab('users')" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2 hidden">
           <i class="fa-solid fa-users"></i>
           <span>จัดการผู้ใช้งาน</span>
           <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold ml-1">Admin</span>
@@ -75,7 +75,7 @@
     <!-- 1. MONTHLY CALENDAR VIEW TAB -->
     <div id="view-monthly" class="tab-content space-y-4 animate-fadeIn">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
-        
+
         <!-- ปุ่มเลือกห้องประชุมแบบแท็บ -->
         <div class="flex items-center space-x-2 overflow-x-auto py-1" id="roomButtonsContainer">
           <!-- JS Rendered Buttons -->
@@ -101,7 +101,7 @@
           </button>
           <button onclick="triggerBookingIntent()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center space-x-2">
             <i class="fa-solid fa-plus"></i>
-            <span>+ จองห้องประชุม</span>
+            <span>จองห้องประชุม</span>
           </button>
         </div>
       </div>
@@ -144,7 +144,7 @@
                 <th class="p-3">ห้องประชุม</th>
                 <th class="p-3">ช่วงเวลา</th>
                 <th class="p-3">ผู้จอง</th>
-                <th class="p-3">เรือง</th>
+                <th class="p-3">เรื่อง</th>
                 <th class="p-3">จำนวนคน / อุปกรณ์</th>
                 <th class="p-3">ตำแหน่ง</th>
                 <th class="p-3">หมายเหตุ</th>
@@ -182,7 +182,7 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
         <div>
           <h2 class="text-lg font-bold text-slate-800">จัดการผู้ใช้งาน (User Management)</h2>
-          <p class="text-xs text-slate-500">กำหนดชื่อ แผนก และสิทธิ์ (Admin / User)</p>
+          <p class="text-xs text-slate-500">กำหนดชื่อ แผนก รหัสผ่าน และสิทธิ์ (Admin / User)</p>
         </div>
         <button onclick="openUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2">
           <i class="fa-solid fa-user-plus"></i>
@@ -191,20 +191,22 @@
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-slate-50 border-b text-slate-600 font-semibold">
-            <tr>
-              <th class="p-3">ชื่อ-นามสกุล</th>
-              <th class="p-3">อีเมล / Username</th>
-              <th class="p-3">แผนก</th>
-              <th class="p-3">สิทธิ์</th>
-              <th class="p-3 text-center">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody" class="divide-y divide-slate-100">
-            <!-- Rendered via JS -->
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b text-slate-600 font-semibold">
+              <tr>
+                <th class="p-3">ชื่อ-นามสกุล</th>
+                <th class="p-3">อีเมล / Username</th>
+                <th class="p-3">แผนก</th>
+                <th class="p-3">สิทธิ์</th>
+                <th class="p-3 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -271,7 +273,7 @@
         <h3 class="font-bold text-lg"><i class="fa-solid fa-calendar-plus mr-2"></i>จองห้องประชุม</h3>
         <button onclick="closeBookingModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
       </div>
-      
+
       <form id="bookingForm" onsubmit="handleBookingSubmit(event)" class="p-6 space-y-4 overflow-y-auto flex-grow">
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">ผู้จอง</label>
@@ -288,7 +290,7 @@
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">วันที่ต้องการจอง <span class="text-red-500">*</span></label>
           <input type="date" id="bookDate" onchange="checkTimeSlotAvailability()" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
-          <p id="bookingDateWarning" class="text-xs text-amber-600 mt-1 hidden"><i class="fa-solid fa-triangle-exclamation mr-1"></i>สำหรับ User ทั่วไป ต้องจองล่วงหน้าอย่างน้อย 3 วัน</p>
+          <p id="bookingDateWarning" class="text-xs text-amber-600 mt-1 hidden"></p>
         </div>
 
         <div>
@@ -401,14 +403,15 @@
     </div>
   </div>
 
-  <!-- MODAL: ADD USER -->
+  <!-- MODAL: ADD/EDIT USER -->
   <div id="userModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-fadeIn">
       <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
-        <h3 class="font-bold text-lg">เพิ่มผู้ใช้งานใหม่</h3>
+        <h3 id="userModalTitle" class="font-bold text-lg">เพิ่มผู้ใช้งานใหม่</h3>
         <button onclick="closeUserModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
       </div>
       <form id="userForm" onsubmit="handleUserSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editUserId">
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
           <input type="text" id="newUserName" required class="w-full border rounded-lg px-3 py-2 text-sm">
@@ -418,8 +421,9 @@
           <input type="text" id="newUserEmail" required class="w-full border rounded-lg px-3 py-2 text-sm">
         </div>
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่าน <span class="text-red-500">*</span></label>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่าน <span id="userPasswordRequired" class="text-red-500">*</span></label>
           <input type="password" id="newUserPassword" required minlength="4" value="123456" class="w-full border rounded-lg px-3 py-2 text-sm">
+          <p id="userPasswordHint" class="text-xs text-slate-400 mt-1 hidden">เว้นว่างไว้ = ไม่เปลี่ยนรหัสผ่านเดิม</p>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">แผนก <span class="text-red-500">*</span></label>
@@ -441,13 +445,82 @@
   </div>
 
   <script>
-    let rooms = JSON.parse(localStorage.getItem('mr_rooms')) || [];
-    let users = JSON.parse(localStorage.getItem('mr_users')) || [];
-    let bookings = JSON.parse(localStorage.getItem('mr_bookings')) || [];
+    // =====================================================================
+    // ค่าคงที่ของกติกา
+    // =====================================================================
+    const TZ = 'Asia/Bangkok';          // ใช้เขตเวลาไทยในการนับ "วันนี้" ไม่ว่าเปิดจากเครื่องไหน
+    const MIN_DAYS_USER_BOOK = 3;       // USER ต้องจองล่วงหน้าอย่างน้อย 3 วัน
+    const MIN_DAYS_USER_CANCEL = 1;     // USER ต้องยกเลิกล่วงหน้าอย่างน้อย 1 วัน
+    const SYNC_INTERVAL_MS = 60000;     // ซิงค์อัตโนมัติทุก 60 วินาที
 
-    let currentUser = JSON.parse(localStorage.getItem('mr_current_user')) || null;
+    // <helpers>
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    function esc(v) {
+      return String(v === undefined || v === null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function formatYMD(dateObj) {
+      return dateObj.getFullYear() + '-' + pad2(dateObj.getMonth() + 1) + '-' + pad2(dateObj.getDate());
+    }
+
+    // วันที่ "วันนี้" ตามเวลาประเทศไทย รูปแบบ YYYY-MM-DD
+    function getTodayStr() {
+      try {
+        const s = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      } catch (e) {}
+      return formatYMD(new Date());
+    }
+
+    // แปลง YYYY-MM-DD เป็นเลขวัน (จำนวนเต็ม) ไม่ผูกกับ timezone
+    function dayNumber(dateStr) {
+      const p = String(dateStr).substring(0, 10).split('-').map(Number);
+      if (p.length !== 3 || p.some(isNaN)) return NaN;
+      return Date.UTC(p[0], p[1] - 1, p[2]) / 86400000;
+    }
+
+    // จำนวนวันจาก "วันนี้" ถึงวันที่กำหนด (วันนี้ = 0, พรุ่งนี้ = 1, ...)
+    function daysUntil(dateStr) {
+      return Math.round(dayNumber(dateStr) - dayNumber(getTodayStr()));
+    }
+
+    function addDaysStr(dateStr, n) {
+      const t = new Date((dayNumber(dateStr) + n) * 86400000);
+      return t.getUTCFullYear() + '-' + pad2(t.getUTCMonth() + 1) + '-' + pad2(t.getUTCDate());
+    }
+    // </helpers>
+
+    function loadLS(key, fallback) {
+      try {
+        const v = JSON.parse(localStorage.getItem(key));
+        return (v === null || v === undefined) ? fallback : v;
+      } catch (e) { return fallback; }
+    }
+    function saveLS(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+    function removeLS(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+    // =====================================================================
+    // State
+    // =====================================================================
+    let rooms = loadLS('mr_rooms', []);
+    let users = loadLS('mr_users', []);
+    let bookings = loadLS('mr_bookings', []);
+    if (!Array.isArray(rooms)) rooms = [];
+    if (!Array.isArray(users)) users = [];
+    if (!Array.isArray(bookings)) bookings = [];
+
+    let currentUser = loadLS('mr_current_user', null);
     let currentViewDate = new Date();
     let selectedRoomId = null;
+    let currentTab = 'monthly';
+
+    let inFlight = 0;              // จำนวนคำสั่งเขียนข้อมูลที่ยังไม่เสร็จ
+    let fetchSeq = 0;              // ลำดับการดึงข้อมูล (ใช้ทิ้งผลลัพธ์เก่า)
+    let pendingAddIds = new Set(); // booking ที่เพิ่งจอง รอยืนยันจากชีต
+    let syncTimer = null;
 
     const Toast = Swal.mixin({
       toast: true,
@@ -457,20 +530,41 @@
       timerProgressBar: true
     });
 
-    window.onload = function() {
-      localStorage.setItem('mr_webapp_url', DEFAULT_WEB_APP_URL);
-      renderAuthHeader();
-      renderRoomsButtons();
-      renderMonthlyCalendar();
-      renderBookingsTable();
-      fetchDataFromSheets();
-    };
+    // =====================================================================
+    // Helpers ที่ขึ้นกับผู้ใช้ / ข้อมูล
+    // =====================================================================
+    function isAdmin() {
+      return !!currentUser && String(currentUser.role).trim().toUpperCase() === 'ADMIN';
+    }
+    function isRoomActive(r) { return String(r.status).trim().toUpperCase() === 'ACTIVE'; }
+    function sameId(a, b) { return String(a).trim() === String(b).trim(); }
 
-    function formatYMD(dateObj) {
-      let y = dateObj.getFullYear();
-      let m = String(dateObj.getMonth() + 1).padStart(2, '0');
-      let d = String(dateObj.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
+    // จำนวนวันขั้นต่ำที่ต้องจองล่วงหน้า: Admin = วันนี้ (0), User = 3 วัน
+    function minBookingOffset() { return isAdmin() ? 0 : MIN_DAYS_USER_BOOK; }
+    function canBookDate(dateStr) { return daysUntil(dateStr) >= minBookingOffset(); }
+
+    function isOwner(b) { return !!currentUser && sameId(b.userId, currentUser.id); }
+
+    // Admin ยกเลิกได้ทุกรายการ / User ยกเลิกได้เฉพาะของตน และต้องล่วงหน้าอย่างน้อย 1 วัน
+    function canCancelBooking(b) {
+      if (!currentUser) return false;
+      if (isAdmin()) return true;
+      if (!isOwner(b)) return false;
+      return daysUntil(b.date) >= MIN_DAYS_USER_CANCEL;
+    }
+
+    function getBookingFor(roomId, dateStr, slot) {
+      return bookings.find(b =>
+        sameId(b.roomId, roomId) &&
+        String(b.date).split('T')[0].trim() === String(dateStr).trim() &&
+        String(b.slot).trim() === slot
+      );
+    }
+
+    function getDeptStr(bk) {
+      if (!bk) return '';
+      const match = String(bk.userName).match(/\(([^)]+)\)\s*$/);
+      return match ? match[1] : '';
     }
 
     function formatShortThaiDate(dateStr) {
@@ -494,28 +588,63 @@
       return `${months[dateObj.getMonth()]} ${dateObj.getFullYear() + 543}`;
     }
 
+    // =====================================================================
+    // Init
+    // =====================================================================
+    window.onload = function () {
+      renderAll();
+      fetchDataFromSheets();
+      startAutoSync();
+    };
+
+    function renderAll() {
+      renderAuthHeader();
+      renderRoomsButtons();
+      renderMonthlyCalendar();
+      renderBookingsTable();
+      renderRoomsManagement();
+      renderUsersManagement();
+    }
+
+    function startAutoSync() {
+      if (syncTimer) clearInterval(syncTimer);
+      syncTimer = setInterval(() => {
+        if (!document.hidden && inFlight === 0) fetchDataFromSheets(false);
+      }, SYNC_INTERVAL_MS);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && inFlight === 0) fetchDataFromSheets(false);
+      });
+    }
+
     function switchTab(tabId) {
+      currentTab = tabId;
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.nav-tab').forEach(el => {
         el.classList.remove('bg-indigo-800', 'text-white');
         el.classList.add('text-indigo-300');
       });
       document.getElementById('view-' + tabId).classList.remove('hidden');
-      document.getElementById('tab-' + tabId).classList.add('bg-indigo-800', 'text-white');
-      document.getElementById('tab-' + tabId).classList.remove('text-indigo-300');
+      const tabBtn = document.getElementById('tab-' + tabId);
+      if (tabBtn) {
+        tabBtn.classList.add('bg-indigo-800', 'text-white');
+        tabBtn.classList.remove('text-indigo-300');
+      }
     }
 
+    // =====================================================================
+    // Auth
+    // =====================================================================
     function renderAuthHeader() {
       const container = document.getElementById('authHeaderControl');
-      const roomsTab = document.getElementById('tab-rooms-btn');
-      const usersTab = document.getElementById('tab-users-btn');
+      const roomsTab = document.getElementById('tab-rooms');
+      const usersTab = document.getElementById('tab-users');
 
       if (currentUser) {
         container.innerHTML = `
           <div class="bg-indigo-900/90 px-3.5 py-1.5 rounded-lg border border-indigo-500/40 flex items-center space-x-2 shadow-sm">
             <i class="fa-solid fa-circle-user text-indigo-300 text-lg"></i>
-            <span class="text-xs font-semibold text-white tracking-wide">${currentUser.name} (${currentUser.dept})</span>
-            <span class="text-[10px] px-2 py-0.5 rounded font-extrabold uppercase tracking-wider ${currentUser.role === 'ADMIN' ? 'bg-amber-500 text-slate-900' : 'bg-blue-500 text-white'}">${currentUser.role}</span>
+            <span class="text-xs font-semibold text-white tracking-wide">${esc(currentUser.name)} (${esc(currentUser.dept)})</span>
+            <span class="text-[10px] px-2 py-0.5 rounded font-extrabold uppercase tracking-wider ${isAdmin() ? 'bg-amber-500 text-slate-900' : 'bg-blue-500 text-white'}">${esc(String(currentUser.role).toUpperCase())}</span>
           </div>
 
           <button onclick="openChangePasswordModal()" class="bg-indigo-800 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm border border-indigo-600/50">
@@ -528,27 +657,29 @@
             <span>ออกจากระบบ</span>
           </button>
         `;
-
-        if (currentUser.role === 'ADMIN') {
-          roomsTab.classList.remove('hidden');
-          usersTab.classList.remove('hidden');
-        } else {
-          roomsTab.classList.add('hidden');
-          usersTab.classList.add('hidden');
-        }
       } else {
         container.innerHTML = `
           <div class="text-xs text-indigo-200"><i class="fa-solid fa-circle-info mr-1"></i>โหมดผู้เข้าชม</div>
           <button onclick="openLoginModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-4 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-right-to-bracket"></i><span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+            <i class="fa-solid fa-right-to-bracket"></i><span>เข้าสู่ระบบ</span>
           </button>
         `;
+      }
+
+      if (isAdmin()) {
+        roomsTab.classList.remove('hidden');
+        usersTab.classList.remove('hidden');
+      } else {
         roomsTab.classList.add('hidden');
         usersTab.classList.add('hidden');
+        if (currentTab === 'rooms' || currentTab === 'users') switchTab('monthly');
       }
     }
 
-    function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+    function openLoginModal() {
+      document.getElementById('loginForm').reset();
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
     function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
 
     function handleLoginSubmit(e) {
@@ -559,10 +690,9 @@
 
       if (found) {
         currentUser = found;
-        localStorage.setItem('mr_current_user', JSON.stringify(currentUser));
+        saveLS('mr_current_user', currentUser);
         closeLoginModal();
-        renderAuthHeader();
-        renderBookingsTable();
+        renderAll();
 
         Swal.fire({
           icon: 'success',
@@ -584,7 +714,7 @@
     function logoutUser() {
       Swal.fire({
         title: 'ออกจากระบบ?',
-        text: "คุณต้องการออกจากระบบใช่หรือไม่",
+        text: 'คุณต้องการออกจากระบบใช่หรือไม่',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#4f46e5',
@@ -594,28 +724,28 @@
       }).then((result) => {
         if (result.isConfirmed) {
           currentUser = null;
-          localStorage.removeItem('mr_current_user');
+          removeLS('mr_current_user');
           switchTab('monthly');
-          renderAuthHeader();
-          renderBookingsTable();
+          renderAll();
           Toast.fire({ icon: 'info', title: 'ออกจากระบบเรียบร้อยแล้ว' });
         }
       });
     }
 
-    function openChangePasswordModal() { 
+    function openChangePasswordModal() {
       document.getElementById('changePasswordForm').reset();
-      document.getElementById('changePasswordModal').classList.remove('hidden'); 
+      document.getElementById('changePasswordModal').classList.remove('hidden');
     }
     function closeChangePasswordModal() { document.getElementById('changePasswordModal').classList.add('hidden'); }
 
     function handleChangePasswordSubmit(e) {
       e.preventDefault();
+      if (!currentUser) return;
       const oldP = String(document.getElementById('oldPassword').value).trim();
       const newP = String(document.getElementById('newPassword').value).trim();
       const confirmP = String(document.getElementById('confirmNewPassword').value).trim();
 
-      const freshUser = users.find(u => String(u.id).trim() === String(currentUser.id).trim()) || currentUser;
+      const freshUser = users.find(u => sameId(u.id, currentUser.id)) || currentUser;
 
       if (oldP !== String(freshUser.password).trim()) {
         Swal.fire({ icon: 'error', title: 'รหัสผ่านเดิมไม่ถูกต้อง' });
@@ -628,69 +758,68 @@
 
       freshUser.password = newP;
       currentUser.password = newP;
-      localStorage.setItem('mr_current_user', JSON.stringify(currentUser));
-      localStorage.setItem('mr_users', JSON.stringify(users));
+      saveLS('mr_current_user', currentUser);
+      saveLS('mr_users', users);
 
-      sendToGoogleSheets("UPDATE_PASSWORD", { id: currentUser.id, newPassword: newP });
+      // ซิงค์กลับอัตโนมัติหลังบันทึกเสร็จ (ไม่ต้องสั่งดึงข้อมูลซ้ำตรงนี้ เพราะจะได้รหัสเก่ากลับมาทับ)
+      sendToGoogleSheets('UPDATE_PASSWORD', { id: currentUser.id, newPassword: newP });
       closeChangePasswordModal();
       Swal.fire({ icon: 'success', title: 'เปลี่ยนรหัสผ่านสำเร็จ!' });
-      fetchDataFromSheets();
+    }
+
+    // =====================================================================
+    // Booking intent
+    // =====================================================================
+    function requireLogin() {
+      Swal.fire({
+        icon: 'info',
+        title: 'ต้องเข้าสู่ระบบก่อน',
+        text: 'กรุณาเข้าสู่ระบบก่อนทำการจองห้องประชุม',
+        confirmButtonText: 'เข้าสู่ระบบ'
+      }).then(() => openLoginModal());
     }
 
     function triggerBookingIntent() {
-      if (!currentUser) {
-        Swal.fire({
-          icon: 'info',
-          title: 'ต้องเข้าสู่ระบบก่อน',
-          text: 'กรุณาเข้าสู่ระบบก่อนทำการจองห้องประชุม',
-          confirmButtonText: 'เข้าสู่ระบบ'
-        }).then(() => openLoginModal());
-      } else {
-        openBookingModal();
-      }
+      if (!currentUser) { requireLogin(); return; }
+      openBookingModal();
     }
 
     function quickBookIntent(roomId, dateStr) {
-      if (!currentUser) {
+      if (!currentUser) { requireLogin(); return; }
+      if (!canBookDate(dateStr)) {
         Swal.fire({
-          icon: 'info',
-          title: 'ต้องเข้าสู่ระบบก่อน',
-          text: 'กรุณาเข้าสู่ระบบก่อนทำการจองห้องประชุม',
-          confirmButtonText: 'เข้าสู่ระบบ'
-        }).then(() => openLoginModal());
-      } else {
-        // เช็คว่าถ้าเป็น User ทั่วไป วันที่คลิกจองด่วนต้องห่างจากวันนี้อย่างน้อย 3 วันหรือไม่
-        if (currentUser.role !== 'ADMIN') {
-          let selectedDate = new Date(dateStr);
-          let today = new Date();
-          today.setHours(0,0,0,0);
-          let diffDays = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
-          if (diffDays < 3) {
-            Swal.fire({ icon: 'warning', title: 'ไม่สามารถจองได้', text: 'สำหรับผู้ใช้งานทั่วไป ต้องทำการจองล่วงหน้าอย่างน้อย 3 วัน' });
-            return;
-          }
-        }
-        quickBookModal(roomId, dateStr);
+          icon: 'warning',
+          title: 'ไม่สามารถจองได้',
+          text: isAdmin() ? 'ไม่สามารถจองย้อนหลังได้' : 'สำหรับผู้ใช้งานทั่วไป ต้องทำการจองล่วงหน้าอย่างน้อย 3 วัน'
+        });
+        return;
       }
+      openBookingModal(roomId, dateStr);
     }
 
+    // =====================================================================
+    // Rooms tabs (calendar)
+    // =====================================================================
     function renderRoomsButtons() {
       const container = document.getElementById('roomButtonsContainer');
       const bookRoomSelect = document.getElementById('bookRoomId');
-      const activeRooms = rooms.filter(r => r.status === 'ACTIVE');
+      const activeRooms = rooms.filter(isRoomActive);
 
-      if (activeRooms.length > 0 && (!selectedRoomId || !activeRooms.some(r => r.id === selectedRoomId))) {
+      if (activeRooms.length > 0 && (!selectedRoomId || !activeRooms.some(r => sameId(r.id, selectedRoomId)))) {
         selectedRoomId = activeRooms[0].id;
       }
+      if (activeRooms.length === 0) selectedRoomId = null;
 
-      container.innerHTML = `<span class="text-xs font-bold text-slate-600 mr-1"><i class="fa-solid fa-door-open text-indigo-600 mr-1"></i>ห้อง:</span>` + 
+      container.innerHTML = `<span class="text-xs font-bold text-slate-600 mr-1"><i class="fa-solid fa-door-open text-indigo-600 mr-1"></i>ห้อง:</span>` +
         activeRooms.map(r => `
-          <button onclick="selectRoomTab('${r.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm ${selectedRoomId === r.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
-            ${r.name}
+          <button data-id="${esc(r.id)}" onclick="selectRoomTab(this.dataset.id)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm whitespace-nowrap ${sameId(selectedRoomId, r.id) ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+            ${esc(r.name)}
           </button>
         `).join('');
 
-      bookRoomSelect.innerHTML = activeRooms.map(r => `<option value="${r.id}">${r.name} (จุ ${r.capacity} คน)</option>`).join('');
+      const prev = bookRoomSelect.value;
+      bookRoomSelect.innerHTML = activeRooms.map(r => `<option value="${esc(r.id)}">${esc(r.name)} (จุ ${esc(r.capacity)} คน)</option>`).join('');
+      if (prev && activeRooms.some(r => sameId(r.id, prev))) bookRoomSelect.value = prev;
     }
 
     function selectRoomTab(roomId) {
@@ -700,7 +829,8 @@
     }
 
     function changeMonth(direction) {
-      currentViewDate.setMonth(currentViewDate.getMonth() + direction);
+      // ตั้งวันที่เป็นวันที่ 1 ก่อน กันเดือนข้ามเมื่อวันนี้เป็นวันที่ 29-31
+      currentViewDate = new Date(currentViewDate.getFullYear(), currentViewDate.getMonth() + direction, 1);
       renderMonthlyCalendar();
     }
 
@@ -709,9 +839,28 @@
       renderMonthlyCalendar();
     }
 
+    // =====================================================================
+    // Monthly calendar
+    // =====================================================================
+    function slotCell(label, bk) {
+      if (!bk) {
+        return `
+          <div class="p-1 rounded text-[11px] border bg-emerald-50 border-emerald-200 text-emerald-800">
+            <div class="font-bold flex justify-between"><span>${label}</span><span class="text-[9px]">ว่าง</span></div>
+          </div>`;
+      }
+      const dept = getDeptStr(bk);
+      const text = `${bk.title || 'จองแล้ว'}${dept ? ' (' + dept + ')' : ''}`;
+      return `
+        <div class="p-1 rounded text-[11px] border bg-red-50 border-red-200 text-red-900 font-semibold">
+          <div class="font-bold flex justify-between"><span>${label}</span><i class="fa-solid fa-lock text-[10px] text-red-400"></i></div>
+          <div class="truncate text-[10px]" title="${esc(text)}">${esc(text)}</div>
+        </div>`;
+    }
+
     function renderMonthlyCalendar() {
-      const activeRooms = rooms.filter(r => r.status === 'ACTIVE');
-      const room = rooms.find(r => String(r.id).trim() === String(selectedRoomId).trim()) || activeRooms[0];
+      const activeRooms = rooms.filter(isRoomActive);
+      const room = activeRooms.find(r => sameId(r.id, selectedRoomId)) || activeRooms[0];
 
       document.getElementById('monthYearDisplay').textContent = getThaiMonthYear(currentViewDate);
 
@@ -720,14 +869,14 @@
           <div class="flex items-center space-x-3">
             <i class="fa-solid fa-door-closed text-amber-400 text-xl"></i>
             <div>
-              <h3 class="font-bold text-base text-white">${room.name}</h3>
-              <p class="text-xs text-slate-300">ความจุ: ${room.capacity} คน | อุปกรณ์: ${room.equipment || 'ไม่มี'}</p>
+              <h3 class="font-bold text-base text-white">${esc(room.name)}</h3>
+              <p class="text-xs text-slate-300">ความจุ: ${esc(room.capacity)} คน | อุปกรณ์: ${esc(room.equipment || 'ไม่มี')}</p>
             </div>
           </div>
           <div class="text-xs text-slate-300">เดือน <span class="text-amber-300 font-semibold">${getThaiMonthYear(currentViewDate)}</span></div>
         `;
       } else {
-        document.getElementById('roomSummaryBanner').innerHTML = `<div class="text-xs text-slate-300">ยังไม่มีห้องประชุมในระบบ</div>`;
+        document.getElementById('roomSummaryBanner').innerHTML = `<div class="text-xs text-slate-300">ยังไม่มีห้องประชุมที่เปิดใช้งานในระบบ</div>`;
       }
 
       const year = currentViewDate.getFullYear();
@@ -735,125 +884,87 @@
       const firstDayOfMonth = new Date(year, month, 1);
       const lastDayOfMonth = new Date(year, month + 1, 0);
 
-      let rawFirstDay = firstDayOfMonth.getDay();
-      let startingDay = rawFirstDay === 0 ? 6 : rawFirstDay - 1;
+      const rawFirstDay = firstDayOfMonth.getDay();
+      const startingDay = rawFirstDay === 0 ? 6 : rawFirstDay - 1;
       const totalDays = lastDayOfMonth.getDate();
-      const grid = document.getElementById('monthlyGrid');
-      grid.innerHTML = '';
+      const todayStr = getTodayStr();
+      const cells = [];
 
       for (let i = 0; i < startingDay; i++) {
-        grid.innerHTML += `<div class="bg-slate-50 min-h-[110px] p-2"></div>`;
+        cells.push(`<div class="bg-slate-50 min-h-[110px] p-2"></div>`);
       }
 
-      const todayYMD = formatYMD(new Date());
-
       for (let day = 1; day <= totalDays; day++) {
-        let mMonth = String(month + 1).padStart(2, '0');
-        let mDay = String(day).padStart(2, '0');
-        let dateStr = `${year}-${mMonth}-${mDay}`;
-        let isToday = dateStr === todayYMD;
+        const dateStr = `${year}-${pad2(month + 1)}-${pad2(day)}`;
+        const isToday = dateStr === todayStr;
+        const diff = daysUntil(dateStr);
+        const isPast = diff < 0;
 
-        // เช็คว่าวันนั้นๆ สำหรับ User ทั่วไปสามารถกดปุ่มจองได้หรือไม่ (ต้องเกิน 3 วันขึ้นไป)
-        let canQuickBook = true;
-        if (currentUser && currentUser.role !== 'ADMIN') {
-          let cellDate = new Date(dateStr);
-          let today = new Date();
-          today.setHours(0,0,0,0);
-          let diffDays = Math.ceil((cellDate - today) / (1000 * 60 * 60 * 24));
-          if (diffDays < 3) canQuickBook = false;
-        }
+        // ปุ่มจอง: User ล็อกอินแล้ว -> แสดงตั้งแต่วันนี้+3 / Admin -> ตั้งแต่วันนี้ / ผู้เข้าชม -> ตั้งแต่วันนี้
+        const canQuickBook = currentUser ? diff >= minBookingOffset() : diff >= 0;
 
-        let mBk = room ? bookings.find(b => {
-          let bDate = String(b.date).split('T')[0].trim();
-          let bRoom = String(b.roomId).trim();
-          return bRoom === String(room.id).trim() && bDate === dateStr && String(b.slot).trim() === 'MORNING';
-        }) : null;
+        const mBk = room ? getBookingFor(room.id, dateStr, 'MORNING') : null;
+        const aBk = room ? getBookingFor(room.id, dateStr, 'AFTERNOON') : null;
+        const showBtn = room && (!mBk || !aBk) && canQuickBook;
 
-        let aBk = room ? bookings.find(b => {
-          let bDate = String(b.date).split('T')[0].trim();
-          let bRoom = String(b.roomId).trim();
-          return bRoom === String(room.id).trim() && bDate === dateStr && String(b.slot).trim() === 'AFTERNOON';
-        }) : null;
-
-        const getDeptStr = (bk) => {
-          if (!bk) return '';
-          const match = String(bk.userName).match(/\(([^)]+)\)/);
-          return match ? match[1] : '';
-        };
-
-        let mDisplay = mBk ? `${mBk.title || 'จองแล้ว'} (${getDeptStr(mBk)})` : '';
-        let aDisplay = aBk ? `${aBk.title || 'จองแล้ว'} (${getDeptStr(aBk)})` : '';
-
-        grid.innerHTML += `
-          <div class="bg-white min-h-[115px] p-2 flex flex-col justify-between hover:bg-slate-50 transition relative ${isToday ? 'ring-2 ring-indigo-500 ring-inset bg-indigo-50/30' : ''}">
+        cells.push(`
+          <div class="bg-white min-h-[115px] p-2 flex flex-col justify-between hover:bg-slate-50 transition relative ${isToday ? 'ring-2 ring-indigo-500 ring-inset bg-indigo-50/30' : ''} ${isPast ? 'opacity-60' : ''}">
             <div>
               <div class="flex justify-between items-center mb-1.5">
                 <span class="text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-slate-800'}">${day}</span>
-                ${(room && (!mBk || !aBk) && (currentUser?.role === 'ADMIN' || canQuickBook)) ? `
-                  <button onclick="quickBookIntent('${room.id}', '${dateStr}')" class="text-[10px] bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-semibold px-1.5 py-0.5 rounded border border-indigo-200">+ จอง</button>
-                ` : ''}
+                ${showBtn ? `<button data-room="${esc(room.id)}" data-date="${dateStr}" onclick="quickBookIntent(this.dataset.room, this.dataset.date)" class="text-[10px] bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-semibold px-1.5 py-0.5 rounded border border-indigo-200">+ จอง</button>` : ''}
               </div>
               <div class="space-y-1">
-                <div class="p-1 rounded text-[11px] border ${mBk ? 'bg-red-50 border-red-200 text-red-900 font-semibold' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}">
-                  <div class="font-bold flex justify-between"><span>เช้า</span>${mBk ? '<i class="fa-solid fa-lock text-[10px] text-red-400"></i>' : '<span class="text-[9px]">ว่าง</span>'}</div>
-                  ${mBk ? `<div class="truncate text-[10px]" title="${mDisplay}">${mDisplay}</div>` : ''}
-                </div>
-                <div class="p-1 rounded text-[11px] border ${aBk ? 'bg-red-50 border-red-200 text-red-900 font-semibold' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}">
-                  <div class="font-bold flex justify-between"><span>บ่าย</span>${aBk ? '<i class="fa-solid fa-lock text-[10px] text-red-400"></i>' : '<span class="text-[9px]">ว่าง</span>'}</div>
-                  ${aBk ? `<div class="truncate text-[10px]" title="${aDisplay}">${aDisplay}</div>` : ''}
-                </div>
+                ${slotCell('เช้า', mBk)}
+                ${slotCell('บ่าย', aBk)}
               </div>
             </div>
           </div>
-        `;
+        `);
       }
 
-      const totalCellsFilled = startingDay + totalDays;
-      const remainingCells = (7 - (totalCellsFilled % 7)) % 7;
+      const remainingCells = (7 - ((startingDay + totalDays) % 7)) % 7;
       for (let i = 0; i < remainingCells; i++) {
-        grid.innerHTML += `<div class="bg-slate-50 min-h-[110px] p-2"></div>`;
+        cells.push(`<div class="bg-slate-50 min-h-[110px] p-2"></div>`);
       }
+
+      document.getElementById('monthlyGrid').innerHTML = cells.join('');
     }
 
-    function openBookingModal() {
-      if (!currentUser) return;
-      document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
-      
-      let dateInput = document.getElementById('bookDate');
-      let minDate = new Date();
-      
-      if (currentUser.role === 'ADMIN') {
-        dateInput.min = formatYMD(new Date()); // Admin เลือกตั้งแต่วันนี้ได้เลย
-        dateInput.value = formatYMD(new Date());
-      } else {
-        // User ทั่วไปบังคับต้องเลือกอย่างน้อย 3 วันล่วงหน้า
-        minDate.setDate(minDate.getDate() + 3);
-        dateInput.min = formatYMD(minDate);
-        dateInput.value = formatYMD(minDate);
-      }
-
+    // =====================================================================
+    // Booking modal
+    // =====================================================================
+    function resetBookingForm() {
       document.getElementById('bookTitle').value = '';
       document.getElementById('bookAttendees').value = '';
       document.getElementById('bookEquipment').value = '';
       document.getElementById('bookNote').value = '';
+      document.getElementById('slotMorning').checked = false;
+      document.getElementById('slotAfternoon').checked = false;
       document.querySelectorAll('input[name="position"]').forEach(cb => cb.checked = false);
-
-      checkTimeSlotAvailability();
-      document.getElementById('bookingModal').classList.remove('hidden');
     }
 
-    function quickBookModal(roomId, dateStr) {
+    function openBookingModal(roomId, dateStr) {
       if (!currentUser) return;
-      document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
-      document.getElementById('bookRoomId').value = roomId;
-      document.getElementById('bookDate').value = dateStr;
-      
-      document.getElementById('bookTitle').value = '';
-      document.getElementById('bookAttendees').value = '';
-      document.getElementById('bookEquipment').value = '';
-      document.getElementById('bookNote').value = '';
-      document.querySelectorAll('input[name="position"]').forEach(cb => cb.checked = false);
 
+      const activeRooms = rooms.filter(isRoomActive);
+      if (activeRooms.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'ยังไม่มีห้องประชุมที่เปิดใช้งาน' });
+        return;
+      }
+
+      document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
+
+      const roomSelect = document.getElementById('bookRoomId');
+      const wantedRoom = roomId || selectedRoomId;
+      if (wantedRoom && activeRooms.some(r => sameId(r.id, wantedRoom))) roomSelect.value = wantedRoom;
+
+      const dateInput = document.getElementById('bookDate');
+      const minDate = addDaysStr(getTodayStr(), minBookingOffset());
+      dateInput.min = minDate;
+      dateInput.value = dateStr || minDate;
+
+      resetBookingForm();
       checkTimeSlotAvailability();
       document.getElementById('bookingModal').classList.remove('hidden');
     }
@@ -871,22 +982,17 @@
 
       if (!roomId || !date) return;
 
-      if (currentUser && currentUser.role !== 'ADMIN') {
-        let selectedDate = new Date(date);
-        let today = new Date();
-        today.setHours(0,0,0,0);
-        let diffTime = selectedDate - today;
-        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 3) {
-          warningEl.classList.remove('hidden');
-        } else {
-          warningEl.classList.add('hidden');
-        }
+      if (currentUser && !canBookDate(date)) {
+        warningEl.innerHTML = isAdmin()
+          ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i>ไม่สามารถจองย้อนหลังได้'
+          : '<i class="fa-solid fa-triangle-exclamation mr-1"></i>สำหรับ User ทั่วไป ต้องจองล่วงหน้าอย่างน้อย 3 วัน';
+        warningEl.classList.remove('hidden');
+      } else {
+        warningEl.classList.add('hidden');
       }
 
-      const mBk = bookings.find(b => String(b.roomId).trim() === String(roomId).trim() && String(b.date).split('T')[0].trim() === String(date).trim() && String(b.slot).trim() === 'MORNING');
-      const aBk = bookings.find(b => String(b.roomId).trim() === String(roomId).trim() && String(b.date).split('T')[0].trim() === String(date).trim() && String(b.slot).trim() === 'AFTERNOON');
+      const mBk = getBookingFor(roomId, date, 'MORNING');
+      const aBk = getBookingFor(roomId, date, 'AFTERNOON');
 
       if (mBk) {
         morningChk.disabled = true; morningChk.checked = false;
@@ -907,64 +1013,91 @@
 
     function handleBookingSubmit(e) {
       e.preventDefault();
+      if (!currentUser) { closeBookingModal(); requireLogin(); return; }
+
       const roomId = document.getElementById('bookRoomId').value;
       const date = document.getElementById('bookDate').value;
       const title = document.getElementById('bookTitle').value.trim();
       const attendees = document.getElementById('bookAttendees').value.trim();
       const equipment = document.getElementById('bookEquipment').value.trim();
       const note = document.getElementById('bookNote').value.trim();
-      
       const positions = Array.from(document.querySelectorAll('input[name="position"]:checked')).map(cb => cb.value).join(', ');
 
-      const mCh = document.getElementById('slotMorning').checked;
-      const aCh = document.getElementById('slotAfternoon').checked;
+      const slotsToBook = [];
+      if (document.getElementById('slotMorning').checked) slotsToBook.push('MORNING');
+      if (document.getElementById('slotAfternoon').checked) slotsToBook.push('AFTERNOON');
 
+      if (!roomId || !date) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาเลือกห้องและวันที่' });
+        return;
+      }
       if (!title || !attendees) {
         Swal.fire({ icon: 'warning', title: 'กรุณากรอกหัวข้อและจำนวนผู้เข้าร่วมให้ครบถ้วน' });
         return;
       }
-
-      if (!mCh && !aCh) {
+      if (slotsToBook.length === 0) {
         Swal.fire({ icon: 'warning', title: 'กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง' });
         return;
       }
-
-      if (currentUser && currentUser.role !== 'ADMIN') {
-        let selectedDate = new Date(date);
-        let today = new Date();
-        today.setHours(0,0,0,0);
-        let diffDays = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
-        if (diffDays < 3) {
-          Swal.fire({ icon: 'error', title: 'ไม่สามารถจองได้', text: 'ผู้ใช้งานทั่วไปต้องทำการจองล่วงหน้าอย่างน้อย 3 วัน' });
-          return;
-        }
+      if (!canBookDate(date)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่สามารถจองได้',
+          text: isAdmin() ? 'ไม่สามารถจองย้อนหลังได้' : 'ผู้ใช้งานทั่วไปต้องทำการจองล่วงหน้าอย่างน้อย 3 วัน'
+        });
+        return;
       }
 
-      const slotsToBook = [];
-      if (mCh) slotsToBook.push('MORNING');
-      if (aCh) slotsToBook.push('AFTERNOON');
+      // ตรวจซ้ำกับข้อมูลล่าสุด กันกรณีมีคนจองตัดหน้า
+      const taken = slotsToBook.filter(s => getBookingFor(roomId, date, s));
+      if (taken.length > 0) {
+        Swal.fire({ icon: 'error', title: 'ช่วงเวลานี้ถูกจองไปแล้ว', text: 'กรุณาเลือกช่วงเวลาอื่น' });
+        checkTimeSlotAvailability();
+        return;
+      }
 
-      slotsToBook.forEach(slot => {
+      const room = rooms.find(r => sameId(r.id, roomId));
+      const capacity = room ? parseInt(room.capacity, 10) : NaN;
+      const data = { roomId, date, title, attendees, equipment, note, positions, slots: slotsToBook };
+
+      if (!isNaN(capacity) && parseInt(attendees, 10) > capacity) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'จำนวนผู้เข้าร่วมเกินความจุห้อง',
+          text: `ห้องนี้จุได้ ${capacity} คน แต่ระบุ ${attendees} คน ต้องการจองต่อหรือไม่`,
+          showCancelButton: true,
+          confirmButtonText: 'จองต่อ',
+          cancelButtonText: 'กลับไปแก้ไข'
+        }).then(r => { if (r.isConfirmed) createBookings(data); });
+        return;
+      }
+
+      createBookings(data);
+    }
+
+    function createBookings(d) {
+      d.slots.forEach(slot => {
         const newBooking = {
           id: 'BK_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-          roomId: roomId,
-          date: date,
+          roomId: d.roomId,
+          date: d.date,
           slot: slot,
           userId: currentUser.id,
           userName: `${currentUser.name} (${currentUser.dept})`,
-          title: title,
-          attendees: attendees,
-          equipment: equipment || '-',
-          positions: positions || '-',
-          note: note || '-',
+          title: d.title,
+          attendees: d.attendees,
+          equipment: d.equipment || '-',
+          positions: d.positions || '-',
+          note: d.note || '-',
           createdAt: new Date().toISOString()
         };
 
         bookings.push(newBooking);
-        sendToGoogleSheets("ADD_BOOKING", newBooking);
+        pendingAddIds.add(newBooking.id);
+        sendToGoogleSheets('ADD_BOOKING', newBooking);
       });
 
-      localStorage.setItem('mr_bookings', JSON.stringify(bookings));
+      saveLS('mr_bookings', bookings);
 
       closeBookingModal();
       Swal.fire({ icon: 'success', title: 'บันทึกการจองห้องประชุมสำเร็จ!' });
@@ -972,9 +1105,17 @@
       renderBookingsTable();
     }
 
+    // =====================================================================
+    // Bookings table
+    // =====================================================================
+    function slotOrder(s) { return String(s).trim() === 'MORNING' ? 0 : 1; }
+
     function renderBookingsTable() {
       const tbody = document.getElementById('bookingsTableBody');
-      const sorted = [...bookings].sort((a,b) => new Date(b.date) - new Date(a.date));
+      const sorted = [...bookings].sort((a, b) => {
+        const d = String(b.date).localeCompare(String(a.date));
+        return d !== 0 ? d : slotOrder(a.slot) - slotOrder(b.slot);
+      });
 
       if (sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-slate-400">ยังไม่มีรายการจองในระบบ</td></tr>';
@@ -982,46 +1123,53 @@
       }
 
       tbody.innerHTML = sorted.map(b => {
-        const room = rooms.find(r => String(r.id).trim() === String(b.roomId).trim());
-        
-        let canDelete = false;
-        if (currentUser) {
-          if (currentUser.role === 'ADMIN') {
-            canDelete = true;
-          } else if (String(b.userId).trim() === String(currentUser.id).trim()) {
-            let bookingDate = new Date(b.date);
-            let today = new Date();
-            today.setHours(0,0,0,0);
-            let diffDays = Math.ceil((bookingDate - today) / (1000 * 60 * 60 * 24));
-            // User ทั่วไปต้องขอยกเลิกก่อนวันประชุมอย่างน้อย 1 วัน
-            if (diffDays >= 1) {
-              canDelete = true;
-            }
-          }
+        const room = rooms.find(r => sameId(r.id, b.roomId));
+        const isMorning = String(b.slot).trim() === 'MORNING';
+        const isPast = daysUntil(b.date) < 0;
+        const att = (b.attendees && b.attendees !== '-') ? `${esc(b.attendees)} คน` : '-';
+
+        let actionHtml = '<span class="text-slate-300">-</span>';
+        if (canCancelBooking(b)) {
+          actionHtml = `<button data-id="${esc(b.id)}" onclick="deleteBooking(this.dataset.id)" class="text-red-500 hover:text-red-700 p-1" title="ยกเลิกการจอง"><i class="fa-solid fa-trash-can"></i></button>`;
+        } else if (isOwner(b)) {
+          actionHtml = '<span class="text-slate-300" title="เลยกำหนดขอยกเลิก (ต้องล่วงหน้าอย่างน้อย 1 วัน)"><i class="fa-solid fa-lock"></i></span>';
         }
 
         return `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-semibold text-slate-800">${formatShortThaiDate(b.date)}</td>
-            <td class="p-3 font-semibold text-indigo-900">${room ? room.name : b.roomId}</td>
-            <td class="p-3"><span class="text-xs font-bold px-2 py-1 rounded ${String(b.slot).trim() === 'MORNING' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${String(b.slot).trim() === 'MORNING' ? 'ช่วงเช้า' : 'ช่วงบ่าย'}</span></td>
-            <td class="p-3">${b.userName}</td>
-            <td class="p-3 text-slate-700 font-medium">${b.title}</td>
-            <td class="p-3 text-xs">${b.attendees || '-'} คน<br><span class="text-slate-400">${b.equipment || ''}</span></td>
-            <td class="p-3 text-xs text-indigo-700 font-semibold">${b.positions || '-'}</td>
-            <td class="p-3 text-xs text-slate-500">${b.note || '-'}</td>
-            <td class="p-3 text-center">
-              ${canDelete ? `<button onclick="deleteBooking('${b.id}')" class="text-red-500 hover:text-red-700 p-1" title="ยกเลิกการจอง"><i class="fa-solid fa-trash-can"></i></button>` : '<span class="text-slate-300" title="เลยกำหนดขอยกเลิก (ต้องล่วงหน้าอย่างน้อย 1 วัน)"><i class="fa-solid fa-lock"></i></span>'}
-            </td>
+          <tr class="hover:bg-slate-50 ${isPast ? 'opacity-60' : ''}">
+            <td class="p-3 font-semibold text-slate-800 whitespace-nowrap">${esc(formatShortThaiDate(b.date))}</td>
+            <td class="p-3 font-semibold text-indigo-900">${room ? esc(room.name) : esc(b.roomId) + ' <span class="text-xs text-slate-400">(ไม่พบห้อง)</span>'}</td>
+            <td class="p-3"><span class="text-xs font-bold px-2 py-1 rounded whitespace-nowrap ${isMorning ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${isMorning ? 'ช่วงเช้า' : 'ช่วงบ่าย'}</span></td>
+            <td class="p-3">${esc(b.userName)}</td>
+            <td class="p-3 text-slate-700 font-medium">${esc(b.title)}</td>
+            <td class="p-3 text-xs">${att}<br><span class="text-slate-400">${esc(b.equipment && b.equipment !== '-' ? b.equipment : '')}</span></td>
+            <td class="p-3 text-xs text-indigo-700 font-semibold">${esc(b.positions || '-')}</td>
+            <td class="p-3 text-xs text-slate-500">${esc(b.note || '-')}</td>
+            <td class="p-3 text-center">${actionHtml}</td>
           </tr>
         `;
       }).join('');
+
+      filterBookingsTable();
     }
 
     function deleteBooking(id) {
+      const b = bookings.find(x => sameId(x.id, id));
+      if (!b) return;
+
+      if (!canCancelBooking(b)) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ไม่สามารถยกเลิกได้',
+          text: 'ต้องยกเลิกล่วงหน้าอย่างน้อย 1 วัน หรือติดต่อผู้ดูแลระบบ'
+        });
+        return;
+      }
+
+      const room = rooms.find(r => sameId(r.id, b.roomId));
       Swal.fire({
         title: 'ยกเลิกการจอง?',
-        text: 'คุณต้องการยกเลิกรายการจองนี้ใช่หรือไม่',
+        html: `${esc(formatShortThaiDate(b.date))} • ${String(b.slot).trim() === 'MORNING' ? 'ช่วงเช้า' : 'ช่วงบ่าย'}<br>${room ? esc(room.name) : ''}<br><span class="text-sm text-slate-500">${esc(b.title)}</span>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -1030,9 +1178,10 @@
         cancelButtonText: 'ปิด'
       }).then((result) => {
         if (result.isConfirmed) {
-          bookings = bookings.filter(b => String(b.id).trim() !== String(id).trim());
-          localStorage.setItem('mr_bookings', JSON.stringify(bookings));
-          sendToGoogleSheets("DELETE_BOOKING", { id: id });
+          bookings = bookings.filter(x => !sameId(x.id, id));
+          pendingAddIds.delete(String(id).trim());
+          saveLS('mr_bookings', bookings);
+          sendToGoogleSheets('DELETE_BOOKING', { id: id });
           renderMonthlyCalendar();
           renderBookingsTable();
           Toast.fire({ icon: 'success', title: 'ยกเลิกรายการจองเรียบร้อยแล้ว' });
@@ -1047,225 +1196,412 @@
       });
     }
 
+    // =====================================================================
+    // Rooms management (Admin)
+    // =====================================================================
     function renderRoomsManagement() {
       const container = document.getElementById('roomsListContainer');
+      if (rooms.length === 0) {
+        container.innerHTML = '<div class="text-sm text-slate-400 col-span-full text-center py-6">ยังไม่มีห้องประชุม</div>';
+        return;
+      }
       container.innerHTML = rooms.map(r => `
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
           <div>
             <div class="flex justify-between items-start">
-              <h3 class="font-bold text-slate-800">${r.name}</h3>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${r.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${r.status}</span>
+              <h3 class="font-bold text-slate-800">${esc(r.name)}</h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isRoomActive(r) ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${esc(r.status)}</span>
             </div>
-            <p class="text-xs text-slate-500 mt-1">ความจุ: ${r.capacity} คน | อุปกรณ์: ${r.equipment || '-'}</p>
+            <p class="text-xs text-slate-500 mt-1">ความจุ: ${esc(r.capacity)} คน | อุปกรณ์: ${esc(r.equipment || '-')}</p>
           </div>
           <div class="flex space-x-2 border-t pt-3">
-            <button onclick="editRoom('${r.id}')" class="flex-1 bg-slate-100 text-slate-700 text-xs py-1.5 rounded"><i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข</button>
-            <button onclick="deleteRoom('${r.id}')" class="bg-red-50 text-red-600 text-xs px-3 py-1.5 rounded"><i class="fa-solid fa-trash-can"></i></button>
+            <button data-id="${esc(r.id)}" onclick="editRoom(this.dataset.id)" class="flex-1 bg-slate-100 text-slate-700 text-xs py-1.5 rounded"><i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข</button>
+            <button data-id="${esc(r.id)}" onclick="deleteRoom(this.dataset.id)" class="bg-red-50 text-red-600 text-xs px-3 py-1.5 rounded"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>
       `).join('');
     }
 
     function openRoomModal() {
+      document.getElementById('roomForm').reset();
       document.getElementById('editRoomId').value = '';
       document.getElementById('roomModalTitle').textContent = 'เพิ่มห้องประชุม';
-      document.getElementById('roomForm').reset();
       document.getElementById('roomModal').classList.remove('hidden');
     }
     function closeRoomModal() { document.getElementById('roomModal').classList.add('hidden'); }
 
     function editRoom(id) {
-      const r = rooms.find(x => String(x.id).trim() === String(id).trim());
+      const r = rooms.find(x => sameId(x.id, id));
       if (!r) return;
       document.getElementById('editRoomId').value = r.id;
       document.getElementById('roomModalTitle').textContent = 'แก้ไขห้องประชุม';
       document.getElementById('roomName').value = r.name;
       document.getElementById('roomCapacity').value = r.capacity;
       document.getElementById('roomEquipments').value = r.equipment;
-      document.getElementById('roomStatus').value = r.status;
+      document.getElementById('roomStatus').value = isRoomActive(r) ? 'ACTIVE' : 'INACTIVE';
       document.getElementById('roomModal').classList.remove('hidden');
     }
 
     function handleRoomSubmit(e) {
       e.preventDefault();
       const id = document.getElementById('editRoomId').value;
+      const name = document.getElementById('roomName').value.trim();
+      if (!name) {
+        Swal.fire({ icon: 'warning', title: 'กรุณากรอกชื่อห้องประชุม' });
+        return;
+      }
       const payload = {
         id: id || 'ROOM_' + Date.now(),
-        name: document.getElementById('roomName').value,
+        name: name,
         capacity: document.getElementById('roomCapacity').value || 10,
-        equipment: document.getElementById('roomEquipments').value,
+        equipment: document.getElementById('roomEquipments').value.trim(),
         status: document.getElementById('roomStatus').value
       };
 
       if (id) {
-        const idx = rooms.findIndex(x => String(x.id).trim() === String(id).trim());
+        const idx = rooms.findIndex(x => sameId(x.id, id));
         if (idx !== -1) rooms[idx] = payload;
-        sendToGoogleSheets("EDIT_ROOM", payload);
+        sendToGoogleSheets('EDIT_ROOM', payload);
       } else {
         rooms.push(payload);
-        sendToGoogleSheets("ADD_ROOM", payload);
+        sendToGoogleSheets('ADD_ROOM', payload);
       }
 
-      localStorage.setItem('mr_rooms', JSON.stringify(rooms));
+      saveLS('mr_rooms', rooms);
 
       closeRoomModal();
       Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลห้องประชุมสำเร็จ' });
       renderRoomsButtons();
       renderMonthlyCalendar();
+      renderBookingsTable();
       renderRoomsManagement();
     }
 
     function deleteRoom(id) {
+      const used = bookings.filter(b => sameId(b.roomId, id)).length;
       Swal.fire({
         title: 'ยืนยันการลบห้องประชุม?',
-        text: 'การลบจะไม่มีผลย้อนกลับ',
+        text: used > 0
+          ? `ห้องนี้มีรายการจอง ${used} รายการ หากลบห้อง รายการจองเดิมจะแสดงเป็น "ไม่พบห้อง" (แนะนำให้เปลี่ยนสถานะเป็นปิดปรับปรุงแทน)`
+          : 'การลบจะไม่มีผลย้อนกลับ',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
-        confirmButtonText: 'ลบห้องประชุม'
+        confirmButtonText: 'ลบห้องประชุม',
+        cancelButtonText: 'ยกเลิก'
       }).then((result) => {
         if (result.isConfirmed) {
-          rooms = rooms.filter(x => String(x.id).trim() !== String(id).trim());
-          localStorage.setItem('mr_rooms', JSON.stringify(rooms));
-          sendToGoogleSheets("DELETE_ROOM", { id: id });
+          rooms = rooms.filter(x => !sameId(x.id, id));
+          saveLS('mr_rooms', rooms);
+          sendToGoogleSheets('DELETE_ROOM', { id: id });
           renderRoomsButtons();
           renderMonthlyCalendar();
+          renderBookingsTable();
           renderRoomsManagement();
           Toast.fire({ icon: 'success', title: 'ลบห้องประชุมเรียบร้อยแล้ว' });
         }
       });
     }
 
-    function renderUsersManagement() {
-      const tbody = document.getElementById('usersTableBody');
-      tbody.innerHTML = users.map(u => `
-        <tr class="hover:bg-slate-50">
-          <td class="p-3 font-semibold">${u.name}</td>
-          <td class="p-3 text-slate-500">${u.email}</td>
-          <td class="p-3">${u.dept}</td>
-          <td class="p-3"><span class="text-xs font-bold px-2 py-0.5 rounded ${u.role === 'ADMIN' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">${u.role}</span></td>
-          <td class="p-3 text-center">
-            ${users.length > 1 ? `<button onclick="deleteUser('${u.id}')" class="text-red-500 p-1"><i class="fa-solid fa-trash-can"></i></button>` : '-'}
-          </td>
-        </tr>
-      `).join('');
+    // =====================================================================
+    // Users management (Admin)
+    // =====================================================================
+    function adminCount() {
+      return users.filter(u => String(u.role).trim().toUpperCase() === 'ADMIN').length;
     }
 
-    function openUserModal() { document.getElementById('userForm').reset(); document.getElementById('userModal').classList.remove('hidden'); }
+    function renderUsersManagement() {
+      const tbody = document.getElementById('usersTableBody');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400">ยังไม่มีผู้ใช้งาน</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => {
+        const admin = String(u.role).trim().toUpperCase() === 'ADMIN';
+        const self = currentUser && sameId(u.id, currentUser.id);
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-semibold">${esc(u.name)}${self ? ' <span class="text-[10px] text-indigo-600">(คุณ)</span>' : ''}</td>
+            <td class="p-3 text-slate-500">${esc(u.email)}</td>
+            <td class="p-3">${esc(u.dept)}</td>
+            <td class="p-3"><span class="text-xs font-bold px-2 py-0.5 rounded ${admin ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">${admin ? 'ADMIN' : 'USER'}</span></td>
+            <td class="p-3 text-center whitespace-nowrap">
+              <button data-id="${esc(u.id)}" onclick="editUser(this.dataset.id)" class="text-indigo-600 p-1 mr-1" title="แก้ไข"><i class="fa-solid fa-pen-to-square"></i></button>
+              ${self ? '' : `<button data-id="${esc(u.id)}" onclick="deleteUser(this.dataset.id)" class="text-red-500 p-1" title="ลบ"><i class="fa-solid fa-trash-can"></i></button>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openUserModal() {
+      document.getElementById('userForm').reset();
+      document.getElementById('editUserId').value = '';
+      document.getElementById('userModalTitle').textContent = 'เพิ่มผู้ใช้งานใหม่';
+      document.getElementById('newUserPassword').required = true;
+      document.getElementById('userPasswordRequired').classList.remove('hidden');
+      document.getElementById('userPasswordHint').classList.add('hidden');
+      document.getElementById('userModal').classList.remove('hidden');
+    }
     function closeUserModal() { document.getElementById('userModal').classList.add('hidden'); }
+
+    function editUser(id) {
+      const u = users.find(x => sameId(x.id, id));
+      if (!u) return;
+      document.getElementById('userForm').reset();
+      document.getElementById('editUserId').value = u.id;
+      document.getElementById('userModalTitle').textContent = 'แก้ไขผู้ใช้งาน';
+      document.getElementById('newUserName').value = u.name;
+      document.getElementById('newUserEmail').value = u.email;
+      document.getElementById('newUserPassword').value = '';
+      document.getElementById('newUserPassword').required = false;
+      document.getElementById('userPasswordRequired').classList.add('hidden');
+      document.getElementById('userPasswordHint').classList.remove('hidden');
+      document.getElementById('newUserDept').value = u.dept;
+      document.getElementById('newUserRole').value = String(u.role).trim().toUpperCase() === 'ADMIN' ? 'ADMIN' : 'USER';
+      document.getElementById('userModal').classList.remove('hidden');
+    }
 
     function handleUserSubmit(e) {
       e.preventDefault();
-      const newUser = {
-        id: 'USR_' + Date.now(),
-        name: document.getElementById('newUserName').value,
-        email: document.getElementById('newUserEmail').value,
-        password: String(document.getElementById('newUserPassword').value).trim(),
-        dept: document.getElementById('newUserDept').value,
-        role: document.getElementById('newUserRole').value
-      };
-      users.push(newUser);
-      localStorage.setItem('mr_users', JSON.stringify(users));
-      sendToGoogleSheets("ADD_USER", newUser);
-      closeUserModal();
-      renderUsersManagement();
-      Swal.fire({ icon: 'success', title: 'เพิ่มผู้ใช้งานสำเร็จ!' });
+      const id = document.getElementById('editUserId').value;
+      const name = document.getElementById('newUserName').value.trim();
+      const email = document.getElementById('newUserEmail').value.trim();
+      const dept = document.getElementById('newUserDept').value.trim();
+      const role = document.getElementById('newUserRole').value;
+      const pw = String(document.getElementById('newUserPassword').value).trim();
+
+      if (!name || !email || !dept) {
+        Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+        return;
+      }
+
+      const dup = users.some(u => String(u.email).trim().toLowerCase() === email.toLowerCase() && !sameId(u.id, id));
+      if (dup) {
+        Swal.fire({ icon: 'error', title: 'อีเมล / Username นี้ถูกใช้แล้ว' });
+        return;
+      }
+
+      if (id) {
+        const u = users.find(x => sameId(x.id, id));
+        if (!u) return;
+
+        const wasAdmin = String(u.role).trim().toUpperCase() === 'ADMIN';
+        if (wasAdmin && role !== 'ADMIN' && adminCount() <= 1) {
+          Swal.fire({ icon: 'error', title: 'ไม่สามารถลดสิทธิ์ได้', text: 'ต้องมีผู้ดูแลระบบ (Admin) อย่างน้อย 1 คน' });
+          return;
+        }
+
+        u.name = name; u.email = email; u.dept = dept; u.role = role;
+        if (pw) u.password = pw;
+        saveLS('mr_users', users);
+        sendToGoogleSheets('EDIT_USER', { id: u.id, name: u.name, email: u.email, password: u.password, dept: u.dept, role: u.role });
+
+        if (currentUser && sameId(currentUser.id, u.id)) {
+          currentUser = u;
+          saveLS('mr_current_user', currentUser);
+        }
+
+        closeUserModal();
+        renderAll();
+        Swal.fire({ icon: 'success', title: 'แก้ไขผู้ใช้งานสำเร็จ!' });
+      } else {
+        const newUser = {
+          id: 'USR_' + Date.now(),
+          name: name,
+          email: email,
+          password: pw,
+          dept: dept,
+          role: role
+        };
+        users.push(newUser);
+        saveLS('mr_users', users);
+        sendToGoogleSheets('ADD_USER', newUser);
+        closeUserModal();
+        renderUsersManagement();
+        Swal.fire({ icon: 'success', title: 'เพิ่มผู้ใช้งานสำเร็จ!' });
+      }
     }
 
     function deleteUser(id) {
+      const u = users.find(x => sameId(x.id, id));
+      if (!u) return;
+
+      if (currentUser && sameId(currentUser.id, id)) {
+        Swal.fire({ icon: 'error', title: 'ไม่สามารถลบบัญชีที่กำลังใช้งานอยู่' });
+        return;
+      }
+      if (String(u.role).trim().toUpperCase() === 'ADMIN' && adminCount() <= 1) {
+        Swal.fire({ icon: 'error', title: 'ไม่สามารถลบได้', text: 'ต้องมีผู้ดูแลระบบ (Admin) อย่างน้อย 1 คน' });
+        return;
+      }
+
       Swal.fire({
         title: 'ยืนยันการลบผู้ใช้?',
+        text: u.name,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
-        confirmButtonText: 'ลบผู้ใช้'
+        confirmButtonText: 'ลบผู้ใช้',
+        cancelButtonText: 'ยกเลิก'
       }).then((result) => {
         if (result.isConfirmed) {
-          users = users.filter(u => String(u.id).trim() !== String(id).trim());
-          localStorage.setItem('mr_users', JSON.stringify(users));
-          sendToGoogleSheets("DELETE_USER", { id: id });
+          users = users.filter(x => !sameId(x.id, id));
+          saveLS('mr_users', users);
+          sendToGoogleSheets('DELETE_USER', { id: id });
           renderUsersManagement();
           Toast.fire({ icon: 'success', title: 'ลบผู้ใช้งานเรียบร้อยแล้ว' });
         }
       });
     }
 
+    // =====================================================================
+    // Google Sheets communication
+    // =====================================================================
     function fetchDataFromSheets(showToast = false) {
-      const url = DEFAULT_WEB_APP_URL;
-      fetch(url)
+      const seq = ++fetchSeq;
+      const url = DEFAULT_WEB_APP_URL + '?action=GET_ALL_DATA&t=' + Date.now();
+
+      const onData = (data) => {
+        if (seq !== fetchSeq) return;   // มีการดึงใหม่กว่าแล้ว ทิ้งผลเก่า
+        if (inFlight > 0) return;       // กำลังเขียนข้อมูลอยู่ รอรอบหลัง กันข้อมูลเก่าทับ
+        try { processFetchedData(data, showToast); } catch (err) { console.error(err); }
+      };
+
+      fetch(url, { cache: 'no-store' })
         .then(res => res.json())
-        .then(data => {
-          if (data) {
-            if (data.rooms && data.rooms.length > 1) {
-              rooms = data.rooms.slice(1).map(r => ({ id: String(r[0]).trim(), name: r[1], capacity: r[2], equipment: r[3], status: r[4] }));
-              localStorage.setItem('mr_rooms', JSON.stringify(rooms));
-            }
-            if (data.users && data.users.length > 1) {
-              users = data.users.slice(1).map(u => ({ id: String(u[0]).trim(), name: u[1], email: u[2], password: String(u[3]).trim(), dept: u[4], role: u[5] }));
-              localStorage.setItem('mr_users', JSON.stringify(users));
-            }
-            if (data.bookings && data.bookings.length > 1) {
-              bookings = data.bookings.slice(1).map(b => {
-                let rawDate = String(b[2] || '');
-                let formattedDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate.substring(0, 10);
-                
-                return {
-                  id: String(b[0]).trim(),
-                  roomId: String(b[1]).trim(),
-                  date: formattedDate.trim(),
-                  slot: String(b[3]).trim(),
-                  userId: String(b[4]).trim(),
-                  userName: b[5],
-                  title: b[6],
-                  attendees: b[7] || '-',
-                  equipment: b[8] || '-',
-                  positions: b[9] || '-',
-                  note: b[10] || '-',
-                  createdAt: b[11]
-                };
-              });
-              localStorage.setItem('mr_bookings', JSON.stringify(bookings));
-            }
-
-            if (currentUser) {
-              const matched = users.find(u => String(u.id).trim() === String(currentUser.id).trim() || String(u.email).trim() === String(currentUser.email).trim());
-              if (matched) {
-                currentUser = matched;
-                localStorage.setItem('mr_current_user', JSON.stringify(currentUser));
-              }
-            }
-
-            renderAuthHeader();
-            renderRoomsButtons();
-            renderMonthlyCalendar();
-            renderBookingsTable();
-            renderRoomsManagement();
-            renderUsersManagement();
-
-            if (showToast) {
-              Toast.fire({ icon: 'success', title: 'ซิงค์ข้อมูลจาก Google Sheets สำเร็จ' });
-            }
-          }
-        })
-        .catch(err => console.log('Error fetching from sheets:', err));
+        .then(onData)
+        .catch(() => fetchViaJsonp(url, onData, showToast));
     }
 
-    function sendToGoogleSheets(action, payload) {
-      const url = DEFAULT_WEB_APP_URL;
-      const params = new URLSearchParams();
-      params.append('action', action);
-      for (let key in payload) {
-        params.append(key, payload[key]);
+    // สำรองสำหรับเบราว์เซอร์ที่ fetch ข้ามโดเมนไม่ได้ (เช่น Safari บางกรณี)
+    function fetchViaJsonp(url, onData, showToast) {
+      const old = document.getElementById('gas-jsonp-script');
+      if (old) old.remove();
+
+      const cbName = 'gasCallback_' + Date.now();
+      const script = document.createElement('script');
+      script.id = 'gas-jsonp-script';
+
+      window[cbName] = function (data) {
+        delete window[cbName];
+        script.remove();
+        onData(data);
+      };
+      script.onerror = function () {
+        delete window[cbName];
+        script.remove();
+        if (showToast) Toast.fire({ icon: 'error', title: 'เชื่อมต่อ Google Sheets ไม่ได้' });
+      };
+      script.src = url + '&callback=' + cbName;
+      document.body.appendChild(script);
+    }
+
+    function processFetchedData(data, showToast) {
+      if (!data || data.status === 'ERROR') {
+        if (showToast) Toast.fire({ icon: 'error', title: 'ดึงข้อมูลไม่สำเร็จ', text: data && data.message ? data.message : '' });
+        return;
       }
 
-      fetch(url, {
+      if (Array.isArray(data.rooms) && data.rooms.length >= 1) {
+        rooms = data.rooms.slice(1)
+          .filter(r => String(r[0]).trim() !== '')
+          .map(r => ({ id: String(r[0]).trim(), name: r[1], capacity: r[2], equipment: r[3], status: String(r[4]).trim() }));
+        saveLS('mr_rooms', rooms);
+      }
+
+      if (Array.isArray(data.users) && data.users.length >= 1) {
+        users = data.users.slice(1)
+          .filter(u => String(u[0]).trim() !== '')
+          .map(u => ({ id: String(u[0]).trim(), name: u[1], email: u[2], password: String(u[3]).trim(), dept: u[4], role: String(u[5]).trim().toUpperCase() }));
+        saveLS('mr_users', users);
+      }
+
+      if (Array.isArray(data.bookings) && data.bookings.length >= 1) {
+        bookings = data.bookings.slice(1)
+          .filter(b => String(b[0]).trim() !== '')
+          .map(b => {
+            const rawDate = String(b[2] || '');
+            const formattedDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate.substring(0, 10);
+            return {
+              id: String(b[0]).trim(),
+              roomId: String(b[1]).trim(),
+              date: formattedDate.trim(),
+              slot: String(b[3]).trim().toUpperCase(),
+              userId: String(b[4]).trim(),
+              userName: b[5],
+              title: b[6],
+              attendees: b[7] || '-',
+              equipment: b[8] || '-',
+              positions: b[9] || '-',
+              note: b[10] || '-',
+              createdAt: b[11]
+            };
+          });
+        saveLS('mr_bookings', bookings);
+
+        // ตรวจว่ารายการที่เพิ่งจองถูกบันทึกจริงหรือไม่ (เช่น ถูกคนอื่นจองตัดหน้า)
+        if (pendingAddIds.size > 0) {
+          const serverIds = new Set(bookings.map(b => b.id));
+          let missing = 0;
+          pendingAddIds.forEach(id => { if (!serverIds.has(id)) missing++; });
+          pendingAddIds.clear();
+          if (missing > 0) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'บางรายการจองไม่สำเร็จ',
+              text: 'ช่วงเวลานั้นอาจถูกจองไปก่อนหน้า หรือบันทึกลง Google Sheets ไม่สำเร็จ กรุณาตรวจสอบปฏิทินแล้วจองใหม่'
+            });
+          }
+        }
+      }
+
+      // อัปเดตข้อมูลผู้ใช้ที่ล็อกอินอยู่ ถ้าบัญชีถูกลบให้ออกจากระบบ
+      if (currentUser && users.length > 0) {
+        const matched = users.find(u => sameId(u.id, currentUser.id));
+        if (matched) {
+          currentUser = matched;
+          saveLS('mr_current_user', currentUser);
+        } else {
+          currentUser = null;
+          removeLS('mr_current_user');
+          switchTab('monthly');
+          Toast.fire({ icon: 'warning', title: 'ไม่พบบัญชีของคุณในระบบ กรุณาเข้าสู่ระบบใหม่' });
+        }
+      }
+
+      renderAll();
+
+      if (!document.getElementById('bookingModal').classList.contains('hidden')) {
+        checkTimeSlotAvailability();
+      }
+
+      if (showToast) {
+        Toast.fire({ icon: 'success', title: 'ซิงค์ข้อมูลจาก Google Sheets สำเร็จ' });
+      }
+    }
+
+    // ส่งคำสั่งเขียนข้อมูล แล้วดึงข้อมูลล่าสุดกลับมาหลังคำสั่งสุดท้ายเสร็จ
+    function sendToGoogleSheets(action, payload) {
+      const params = new URLSearchParams();
+      params.append('action', action);
+      for (const key in payload) {
+        if (payload[key] !== undefined && payload[key] !== null) params.append(key, payload[key]);
+      }
+
+      inFlight++;
+      return fetch(DEFAULT_WEB_APP_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString()
+      }).catch(err => {
+        console.log('Sheets Sync Error:', err);
+        Toast.fire({ icon: 'error', title: 'บันทึกลง Google Sheets ไม่สำเร็จ' });
       }).then(() => {
-        setTimeout(() => fetchDataFromSheets(false), 1500);
-      }).catch(err => console.log('Sheets Sync Error:', err));
+        inFlight = Math.max(0, inFlight - 1);
+        if (inFlight === 0) setTimeout(() => fetchDataFromSheets(false), 600);
+      });
     }
   </script>
 </body>
