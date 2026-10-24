@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจองห้องประชุม</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Prompt -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 CSS & JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: 'Prompt', sans-serif; }
+    .animate-fadeIn { animation: fadeIn 0.2s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- EMBEDDED GOOGLE APPS SCRIPT URL -->
+  <script>
+    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywE3gn_u8lZNuaQPtQkuURSbNWVPYVuihxHSHBQhQetxr-NENhQV_It25GZE1RmuBzYw/exec";
+  </script>
+
+  <!-- Header & Navigation -->
+  <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-indigo-700/80 rounded-xl text-white shadow-inner border border-indigo-600/50">
+          <i class="fa-solid fa-calendar-days text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold leading-tight tracking-wide">ระบบจองห้องประชุม</h1>
+          <p class="text-xs text-indigo-200 font-light">Meeting Room Booking System</p>
+        </div>
+      </div>
+
+      <!-- Authentication Controls / User Bar -->
+      <div class="flex items-center space-x-3 text-sm" id="authHeaderControl">
+        <!-- JS Rendered -->
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-indigo-950 px-4 border-t border-indigo-800/50">
+      <div class="max-w-7xl mx-auto flex space-x-2 overflow-x-auto py-1">
+        <button onclick="switchTab('monthly')" id="tab-monthly" class="nav-tab text-white bg-indigo-800 px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2">
+          <i class="fa-solid fa-calendar-month"></i>
+          <span>ปฏิทินรายเดือน</span>
+        </button>
+        <button onclick="switchTab('list')" id="tab-list" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2">
+          <i class="fa-solid fa-list-check"></i>
+          <span>รายการจองทั้งหมด</span>
+        </button>
+        <button id="tab-rooms-btn" onclick="switchTab('rooms')" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2 hidden">
+          <i class="fa-solid fa-door-open"></i>
+          <span>จัดการห้องประชุม</span>
+          <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold ml-1">Admin</span>
+        </button>
+        <button id="tab-users-btn" onclick="switchTab('users')" class="nav-tab text-indigo-300 hover:text-white px-4 py-2 rounded-t-md text-sm font-medium flex items-center space-x-2 hidden">
+          <i class="fa-solid fa-users"></i>
+          <span>จัดการผู้ใช้งาน</span>
+          <span class="text-[10px] bg-amber-500 text-slate-900 px-1.5 py-0.5 rounded font-bold ml-1">Admin</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <!-- 1. MONTHLY CALENDAR VIEW TAB -->
+    <div id="view-monthly" class="tab-content space-y-4 animate-fadeIn">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+          <label class="text-sm font-bold text-slate-700 flex items-center space-x-1.5">
+            <i class="fa-solid fa-door-open text-indigo-600"></i>
+            <span>เลือกดูห้องประชุม:</span>
+          </label>
+          <select id="monthlyRoomSelect" onchange="renderMonthlyCalendar()" class="border-2 border-indigo-200 rounded-lg text-sm font-semibold px-3 py-1.5 bg-indigo-50/50 text-indigo-900 focus:outline-none focus:border-indigo-500">
+            <!-- Active Rooms -->
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="changeMonth(-1)" class="p-2 border rounded-lg hover:bg-slate-100 text-slate-600 transition" title="เดือนก่อนหน้า">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button onclick="goCurrentMonth()" class="px-3 py-1.5 border rounded-lg hover:bg-slate-100 text-sm font-medium text-slate-700 transition">
+            เดือนนี้
+          </button>
+          <button onclick="changeMonth(1)" class="p-2 border rounded-lg hover:bg-slate-100 text-slate-600 transition" title="เดือนถัดไป">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <span id="monthYearDisplay" class="text-lg font-bold text-slate-800 ml-2">...</span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="fetchDataFromSheets(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center space-x-1.5" title="รีเฟรชข้อมูลจาก Sheets">
+            <i class="fa-solid fa-rotate"></i>
+            <span>ซิงค์ข้อมูล</span>
+          </button>
+          <button onclick="triggerBookingIntent()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>+ จองห้องประชุม</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="roomSummaryBanner" class="bg-slate-800 text-white p-4 rounded-xl shadow-sm flex flex-wrap justify-between items-center gap-2">
+        <!-- JS Rendered -->
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="grid grid-cols-7 bg-slate-100 border-b border-slate-200 text-center font-bold text-slate-700 text-xs py-2.5">
+          <div>จันทร์</div>
+          <div>อังคาร</div>
+          <div>พุธ</div>
+          <div>พฤหัสบดี</div>
+          <div>ศุกร์</div>
+          <div class="text-indigo-600">เสาร์</div>
+          <div class="text-red-500">อาทิตย์</div>
+        </div>
+        <div id="monthlyGrid" class="grid grid-cols-7 divide-x divide-y divide-slate-200 bg-slate-200">
+          <!-- Calendar Days JS Rendered -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. ALL BOOKINGS LIST TAB -->
+    <div id="view-list" class="tab-content hidden space-y-4 animate-fadeIn">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center flex-wrap gap-4">
+        <input type="text" id="searchInput" onkeyup="filterBookingsTable()" placeholder="ค้นหาชื่อผู้จอง, ห้องประชุม..." class="border rounded-lg px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <button onclick="triggerBookingIntent()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+          + จองห้องประชุม
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b text-slate-600 font-semibold">
+              <tr>
+                <th class="p-3">วันที่จอง</th>
+                <th class="p-3">ห้องประชุม</th>
+                <th class="p-3">ช่วงเวลา</th>
+                <th class="p-3">ผู้จอง (แผนก)</th>
+                <th class="p-3">วัตถุประสงค์</th>
+                <th class="p-3 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ROOM MANAGEMENT TAB (ADMIN) -->
+    <div id="view-rooms" class="tab-content hidden space-y-4 animate-fadeIn">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">จัดการห้องประชุม (Room Management)</h2>
+          <p class="text-xs text-slate-500">สามารถ เพิ่ม แก้ไข ปิดการใช้งาน หรือลบห้องประชุมได้</p>
+        </div>
+        <button onclick="openRoomModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2">
+          <i class="fa-solid fa-plus"></i>
+          <span>เพิ่มห้องประชุมใหม่</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="roomsListContainer">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- 4. USER MANAGEMENT TAB (ADMIN) -->
+    <div id="view-users" class="tab-content hidden space-y-4 animate-fadeIn">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">จัดการผู้ใช้งาน (User Management)</h2>
+          <p class="text-xs text-slate-500">กำหนดชื่อ แผนก และสิทธิ์ (Admin / User)</p>
+        </div>
+        <button onclick="openUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>เพิ่มผู้ใช้ใหม่</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 border-b text-slate-600 font-semibold">
+            <tr>
+              <th class="p-3">ชื่อ-นามสกุล</th>
+              <th class="p-3">อีเมล / Username</th>
+              <th class="p-3">แผนก</th>
+              <th class="p-3">สิทธิ์</th>
+              <th class="p-3 text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody" class="divide-y divide-slate-100">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: LOGIN / AUTH -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-fadeIn">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-right-to-bracket mr-2"></i>เข้าสู่ระบบเพื่อจองห้องประชุม</h3>
+        <button onclick="closeLoginModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">อีเมล / รหัสผู้ใช้งาน <span class="text-red-500">*</span></label>
+          <input type="text" id="loginEmail" required placeholder="ใส่อีเมลหรือชื่อผู้ใช้" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่าน <span class="text-red-500">*</span></label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t">
+          <button type="button" onclick="closeLoginModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">เข้าสู่ระบบ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CHANGE PASSWORD -->
+  <div id="changePasswordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-fadeIn">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-key mr-2"></i>เปลี่ยนรหัสผ่าน</h3>
+        <button onclick="closeChangePasswordModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="changePasswordForm" onsubmit="handleChangePasswordSubmit(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่านเดิม <span class="text-red-500">*</span></label>
+          <input type="password" id="oldPassword" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่านใหม่ <span class="text-red-500">*</span></label>
+          <input type="password" id="newPassword" required minlength="4" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ยืนยันรหัสผ่านใหม่ <span class="text-red-500">*</span></label>
+          <input type="password" id="confirmNewPassword" required minlength="4" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t">
+          <button type="button" onclick="closeChangePasswordModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">บันทึกรหัสผ่านใหม่</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BOOKING FORM -->
+  <div id="bookingModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden animate-fadeIn">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-calendar-plus mr-2"></i>จองห้องประชุม</h3>
+        <button onclick="closeBookingModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="bookingForm" onsubmit="handleBookingSubmit(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ชื่อผู้จอง</label>
+          <input type="text" id="bookUserName" readonly class="w-full bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium text-slate-700">
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ห้องประชุม <span class="text-red-500">*</span></label>
+          <select id="bookRoomId" onchange="checkTimeSlotAvailability()" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+            <!-- Dynamic Active Rooms -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">วันที่ต้องการจอง <span class="text-red-500">*</span></label>
+          <input type="date" id="bookDate" onchange="checkTimeSlotAvailability()" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">เลือกช่วงเวลา (สามารถเลือกจองพร้อมกัน 2 ช่วงได้) <span class="text-red-500">*</span></label>
+          <div class="space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50">
+            <label id="slotMorningLabel" class="flex items-center space-x-3 p-2 rounded hover:bg-white border cursor-pointer transition">
+              <input type="checkbox" id="slotMorning" value="MORNING" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <div class="text-sm">
+                <span class="font-semibold text-slate-800">ช่วงเช้า</span>
+                <span class="text-xs text-slate-500 ml-2">(09:00 - 12:00 น.)</span>
+                <div id="slotMorningStatus" class="text-xs font-semibold"></div>
+              </div>
+            </label>
+
+            <label id="slotAfternoonLabel" class="flex items-center space-x-3 p-2 rounded hover:bg-white border cursor-pointer transition">
+              <input type="checkbox" id="slotAfternoon" value="AFTERNOON" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <div class="text-sm">
+                <span class="font-semibold text-slate-800">ช่วงบ่าย</span>
+                <span class="text-xs text-slate-500 ml-2">(13:00 - 16:00 น.)</span>
+                <div id="slotAfternoonStatus" class="text-xs font-semibold"></div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">วัตถุประสงค์ / หัวข้อการประชุม <span class="text-red-500">*</span></label>
+          <textarea id="bookTitle" rows="2" required placeholder="เช่น ประชุมทีม" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t">
+          <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">ยืนยันการจอง</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT ROOM -->
+  <div id="roomModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-fadeIn">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <h3 id="roomModalTitle" class="font-bold text-lg">เพิ่มห้องประชุม</h3>
+        <button onclick="closeRoomModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="roomForm" onsubmit="handleRoomSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editRoomId">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ชื่อห้องประชุม <span class="text-red-500">*</span></label>
+          <input type="text" id="roomName" required class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ความจุ (จำนวนคน)</label>
+          <input type="number" id="roomCapacity" min="1" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">อุปกรณ์</label>
+          <input type="text" id="roomEquipments" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">สถานะ</label>
+          <select id="roomStatus" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="ACTIVE">เปิดใช้งาน (Active)</option>
+            <option value="INACTIVE">ปิดปรับปรุง (Inactive)</option>
+          </select>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t">
+          <button type="button" onclick="closeRoomModal()" class="px-4 py-2 border rounded-lg text-sm">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD USER -->
+  <div id="userModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-fadeIn">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-lg">เพิ่มผู้ใช้งานใหม่</h3>
+        <button onclick="closeUserModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="userForm" onsubmit="handleUserSubmit(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+          <input type="text" id="newUserName" required class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">อีเมล / Username <span class="text-red-500">*</span></label>
+          <input type="text" id="newUserEmail" required class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่าน <span class="text-red-500">*</span></label>
+          <input type="password" id="newUserPassword" required minlength="4" value="123456" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">แผนก <span class="text-red-500">*</span></label>
+          <input type="text" id="newUserDept" required placeholder="เช่น ฝ่าย 98" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">สิทธิ์ใช้งาน</label>
+          <select id="newUserRole" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="USER">User</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2 border rounded-lg text-sm">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let rooms = JSON.parse(localStorage.getItem('mr_rooms')) || [];
+    let users = JSON.parse(localStorage.getItem('mr_users')) || [];
+    let bookings = JSON.parse(localStorage.getItem('mr_bookings')) || [];
+
+    let currentUser = JSON.parse(localStorage.getItem('mr_current_user')) || null;
+    let currentViewDate = new Date();
+
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true
+    });
+
+    window.onload = function() {
+      localStorage.setItem('mr_webapp_url', DEFAULT_WEB_APP_URL);
+      renderAuthHeader();
+      renderRoomsSelect();
+      renderMonthlyCalendar();
+      renderBookingsTable();
+      fetchDataFromSheets();
+    };
+
+    function formatYMD(dateObj) {
+      let y = dateObj.getFullYear();
+      let m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      let d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function formatShortThaiDate(dateStr) {
+      if (!dateStr) return '';
+      const cleanDate = String(dateStr).split('T')[0];
+      const parts = cleanDate.split('-');
+      if (parts.length !== 3) return dateStr;
+
+      const year = parseInt(parts[0], 10) + 543;
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+
+      const shortMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      const shortYear = String(year).slice(-2);
+
+      return `${day} ${shortMonths[monthIdx]} ${shortYear}`;
+    }
+
+    function getThaiMonthYear(dateObj) {
+      const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+      return `${months[dateObj.getMonth()]} ${dateObj.getFullYear() + 543}`;
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.classList.remove('bg-indigo-800', 'text-white');
+        el.classList.add('text-indigo-300');
+      });
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      document.getElementById('tab-' + tabId).classList.add('bg-indigo-800', 'text-white');
+      document.getElementById('tab-' + tabId).classList.remove('text-indigo-300');
+    }
+
+    function renderAuthHeader() {
+      const container = document.getElementById('authHeaderControl');
+      const roomsTab = document.getElementById('tab-rooms-btn');
+      const usersTab = document.getElementById('tab-users-btn');
+
+      if (currentUser) {
+        container.innerHTML = `
+          <div class="bg-indigo-900/90 px-3.5 py-1.5 rounded-lg border border-indigo-500/40 flex items-center space-x-2 shadow-sm">
+            <i class="fa-solid fa-circle-user text-indigo-300 text-lg"></i>
+            <span class="text-xs font-semibold text-white tracking-wide">${currentUser.name} (${currentUser.dept})</span>
+            <span class="text-[10px] px-2 py-0.5 rounded font-extrabold uppercase tracking-wider ${currentUser.role === 'ADMIN' ? 'bg-amber-500 text-slate-900' : 'bg-blue-500 text-white'}">${currentUser.role}</span>
+          </div>
+
+          <button onclick="openChangePasswordModal()" class="bg-indigo-800 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm border border-indigo-600/50">
+            <i class="fa-solid fa-key text-amber-400"></i>
+            <span>เปลี่ยนรหัสผ่าน</span>
+          </button>
+
+          <button onclick="logoutUser()" class="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>ออกจากระบบ</span>
+          </button>
+        `;
+
+        if (currentUser.role === 'ADMIN') {
+          roomsTab.classList.remove('hidden');
+          usersTab.classList.remove('hidden');
+        } else {
+          roomsTab.classList.add('hidden');
+          usersTab.classList.add('hidden');
+        }
+      } else {
+        container.innerHTML = `
+          <div class="text-xs text-indigo-200"><i class="fa-solid fa-circle-info mr-1"></i>โหมดผู้เข้าชม</div>
+          <button onclick="openLoginModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-4 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-right-to-bracket"></i><span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+          </button>
+        `;
+        roomsTab.classList.add('hidden');
+        usersTab.classList.add('hidden');
+      }
+    }
+
+    function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+    function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = String(document.getElementById('loginPassword').value).trim();
+      const found = users.find(u => String(u.email).trim().toLowerCase() === email.toLowerCase() && String(u.password).trim() === pass);
+
+      if (found) {
+        currentUser = found;
+        localStorage.setItem('mr_current_user', JSON.stringify(currentUser));
+        closeLoginModal();
+        renderAuthHeader();
+        renderBookingsTable();
+
+        Swal.fire({
+          icon: 'success',
+          title: `ยินดีต้อนรับคุณ ${currentUser.name}!`,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'เข้าสู่ระบบไม่สำเร็จ',
+          text: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบข้อมูลอีกครั้ง'
+        });
+      }
+    }
+
+    function logoutUser() {
+      Swal.fire({
+        title: 'ออกจากระบบ?',
+        text: "คุณต้องการออกจากระบบใช่หรือไม่",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'ออกจากระบบ',
+        cancelButtonText: 'ยกเลิก'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          currentUser = null;
+          localStorage.removeItem('mr_current_user');
+          switchTab('monthly');
+          renderAuthHeader();
+          renderBookingsTable();
+          Toast.fire({ icon: 'info', title: 'ออกจากระบบเรียบร้อยแล้ว' });
+        }
+      });
+    }
+
+    function openChangePasswordModal() { 
+      document.getElementById('changePasswordForm').reset();
+      document.getElementById('changePasswordModal').classList.remove('hidden'); 
+    }
+    function closeChangePasswordModal() { document.getElementById('changePasswordModal').classList.add('hidden'); }
+
+    function handleChangePasswordSubmit(e) {
+      e.preventDefault();
+      const oldP = String(document.getElementById('oldPassword').value).trim();
+      const newP = String(document.getElementById('newPassword').value).trim();
+      const confirmP = String(document.getElementById('confirmNewPassword').value).trim();
+
+      const freshUser = users.find(u => String(u.id).trim() === String(currentUser.id).trim()) || currentUser;
+
+      if (oldP !== String(freshUser.password).trim()) {
+        Swal.fire({ icon: 'error', title: 'รหัสผ่านเดิมไม่ถูกต้อง' });
+        return;
+      }
+      if (newP !== confirmP) {
+        Swal.fire({ icon: 'error', title: 'รหัสผ่านใหม่ไม่ตรงกัน' });
+        return;
+      }
+
+      freshUser.password = newP;
+      currentUser.password = newP;
+      localStorage.setItem('mr_current_user', JSON.stringify(currentUser));
+      localStorage.setItem('mr_users', JSON.stringify(users));
+
+      sendToGoogleSheets("UPDATE_PASSWORD", { id: currentUser.id, newPassword: newP });
+      closeChangePasswordModal();
+      Swal.fire({ icon: 'success', title: 'เปลี่ยนรหัสผ่านสำเร็จ!' });
+      fetchDataFromSheets();
+    }
+
+    function triggerBookingIntent() {
+      if (!currentUser) {
+        Swal.fire({
+          icon: 'info',
+          title: 'ต้องเข้าสู่ระบบก่อน',
+          text: 'กรุณาเข้าสู่ระบบก่อนทำการจองห้องประชุม',
+          confirmButtonText: 'เข้าสู่ระบบ'
+        }).then(() => openLoginModal());
+      } else {
+        openBookingModal();
+      }
+    }
+
+    function quickBookIntent(roomId, dateStr) {
+      if (!currentUser) {
+        Swal.fire({
+          icon: 'info',
+          title: 'ต้องเข้าสู่ระบบก่อน',
+          text: 'กรุณาเข้าสู่ระบบก่อนทำการจองห้องประชุม',
+          confirmButtonText: 'เข้าสู่ระบบ'
+        }).then(() => openLoginModal());
+      } else {
+        quickBookModal(roomId, dateStr);
+      }
+    }
+
+    function renderRoomsSelect() {
+      const monthlySelect = document.getElementById('monthlyRoomSelect');
+      const bookRoomSelect = document.getElementById('bookRoomId');
+      const activeRooms = rooms.filter(r => r.status === 'ACTIVE');
+
+      monthlySelect.innerHTML = activeRooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+      bookRoomSelect.innerHTML = activeRooms.map(r => `<option value="${r.id}">${r.name} (จุ ${r.capacity} คน)</option>`).join('');
+    }
+
+    function changeMonth(direction) {
+      currentViewDate.setMonth(currentViewDate.getMonth() + direction);
+      renderMonthlyCalendar();
+    }
+
+    function goCurrentMonth() {
+      currentViewDate = new Date();
+      renderMonthlyCalendar();
+    }
+
+    function renderMonthlyCalendar() {
+      const selectedRoomId = document.getElementById('monthlyRoomSelect').value;
+      const room = rooms.find(r => String(r.id).trim() === String(selectedRoomId).trim()) || rooms[0];
+
+      document.getElementById('monthYearDisplay').textContent = getThaiMonthYear(currentViewDate);
+
+      if (room) {
+        document.getElementById('roomSummaryBanner').innerHTML = `
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-door-closed text-amber-400 text-xl"></i>
+            <div>
+              <h3 class="font-bold text-base text-white">${room.name}</h3>
+              <p class="text-xs text-slate-300">ความจุ: ${room.capacity} คน | อุปกรณ์: ${room.equipment || 'ไม่มี'}</p>
+            </div>
+          </div>
+          <div class="text-xs text-slate-300">เดือน <span class="text-amber-300 font-semibold">${getThaiMonthYear(currentViewDate)}</span></div>
+        `;
+      }
+
+      const year = currentViewDate.getFullYear();
+      const month = currentViewDate.getMonth();
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+
+      let rawFirstDay = firstDayOfMonth.getDay();
+      let startingDay = rawFirstDay === 0 ? 6 : rawFirstDay - 1;
+      const totalDays = lastDayOfMonth.getDate();
+      const grid = document.getElementById('monthlyGrid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < startingDay; i++) {
+        grid.innerHTML += `<div class="bg-slate-50 min-h-[110px] p-2"></div>`;
+      }
+
+      const todayYMD = formatYMD(new Date());
+
+      for (let day = 1; day <= totalDays; day++) {
+        let currDate = new Date(year, month, day);
+        let dateStr = formatYMD(currDate);
+        let isToday = dateStr === todayYMD;
+
+        let mBk = bookings.find(b => {
+          let bDate = String(b.date).split('T')[0].trim();
+          let bRoom = String(b.roomId).trim();
+          return bRoom === String(room?.id).trim() && bDate === dateStr && String(b.slot).trim() === 'MORNING';
+        });
+
+        let aBk = bookings.find(b => {
+          let bDate = String(b.date).split('T')[0].trim();
+          let bRoom = String(b.roomId).trim();
+          return bRoom === String(room?.id).trim() && bDate === dateStr && String(b.slot).trim() === 'AFTERNOON';
+        });
+
+        const getDeptStr = (bk) => {
+          if (!bk) return '';
+          const match = String(bk.userName).match(/\(([^)]+)\)/);
+          return match ? match[1] : '';
+        };
+
+        let mDisplay = mBk ? `${mBk.title || 'จองแล้ว'} (${getDeptStr(mBk)})` : '';
+        let aDisplay = aBk ? `${aBk.title || 'จองแล้ว'} (${getDeptStr(aBk)})` : '';
+
+        grid.innerHTML += `
+          <div class="bg-white min-h-[115px] p-2 flex flex-col justify-between hover:bg-slate-50 transition relative ${isToday ? 'ring-2 ring-indigo-500 ring-inset bg-indigo-50/30' : ''}">
+            <div>
+              <div class="flex justify-between items-center mb-1.5">
+                <span class="text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-slate-800'}">${day}</span>
+                ${(!mBk || !aBk) ? `
+                  <button onclick="quickBookIntent('${room?.id}', '${dateStr}')" class="text-[10px] bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-semibold px-1.5 py-0.5 rounded border border-indigo-200">+ จอง</button>
+                ` : ''}
+              </div>
+              <div class="space-y-1">
+                <div class="p-1 rounded text-[11px] border ${mBk ? 'bg-red-50 border-red-200 text-red-900 font-semibold' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}">
+                  <div class="font-bold flex justify-between"><span>เช้า</span>${mBk ? '<i class="fa-solid fa-lock text-[10px] text-red-400"></i>' : '<span class="text-[9px]">ว่าง</span>'}</div>
+                  ${mBk ? `<div class="truncate text-[10px]" title="${mDisplay}">${mDisplay}</div>` : ''}
+                </div>
+                <div class="p-1 rounded text-[11px] border ${aBk ? 'bg-red-50 border-red-200 text-red-900 font-semibold' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}">
+                  <div class="font-bold flex justify-between"><span>บ่าย</span>${aBk ? '<i class="fa-solid fa-lock text-[10px] text-red-400"></i>' : '<span class="text-[9px]">ว่าง</span>'}</div>
+                  ${aBk ? `<div class="truncate text-[10px]" title="${aDisplay}">${aDisplay}</div>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const totalCellsFilled = startingDay + totalDays;
+      const remainingCells = (7 - (totalCellsFilled % 7)) % 7;
+      for (let i = 0; i < remainingCells; i++) {
+        grid.innerHTML += `<div class="bg-slate-50 min-h-[110px] p-2"></div>`;
+      }
+    }
+
+    function openBookingModal() {
+      if (!currentUser) return;
+      document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
+      document.getElementById('bookDate').value = formatYMD(new Date());
+      checkTimeSlotAvailability();
+      document.getElementById('bookingModal').classList.remove('hidden');
+    }
+
+    function quickBookModal(roomId, dateStr) {
+      if (!currentUser) return;
+      document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
+      document.getElementById('bookRoomId').value = roomId;
+      document.getElementById('bookDate').value = dateStr;
+      checkTimeSlotAvailability();
+      document.getElementById('bookingModal').classList.remove('hidden');
+    }
+
+    function closeBookingModal() { document.getElementById('bookingModal').classList.add('hidden'); }
+
+    function checkTimeSlotAvailability() {
+      const roomId = document.getElementById('bookRoomId').value;
+      const date = document.getElementById('bookDate').value;
+      const morningChk = document.getElementById('slotMorning');
+      const afternoonChk = document.getElementById('slotAfternoon');
+      const mStatus = document.getElementById('slotMorningStatus');
+      const aStatus = document.getElementById('slotAfternoonStatus');
+
+      if (!roomId || !date) return;
+
+      const mBk = bookings.find(b => String(b.roomId).trim() === String(roomId).trim() && String(b.date).split('T')[0].trim() === String(date).trim() && String(b.slot).trim() === 'MORNING');
+      const aBk = bookings.find(b => String(b.roomId).trim() === String(roomId).trim() && String(b.date).split('T')[0].trim() === String(date).trim() && String(b.slot).trim() === 'AFTERNOON');
+
+      if (mBk) {
+        morningChk.disabled = true; morningChk.checked = false;
+        mStatus.textContent = `❌ ถูกจองแล้วโดย ${mBk.userName}`; mStatus.className = 'text-xs text-red-600 font-semibold';
+      } else {
+        morningChk.disabled = false;
+        mStatus.textContent = '✅ ว่างเปิดจอง'; mStatus.className = 'text-xs text-emerald-600 font-semibold';
+      }
+
+      if (aBk) {
+        afternoonChk.disabled = true; afternoonChk.checked = false;
+        aStatus.textContent = `❌ ถูกจองแล้วโดย ${aBk.userName}`; aStatus.className = 'text-xs text-red-600 font-semibold';
+      } else {
+        afternoonChk.disabled = false;
+        aStatus.textContent = '✅ ว่างเปิดจอง'; aStatus.className = 'text-xs text-emerald-600 font-semibold';
+      }
+    }
+
+    function handleBookingSubmit(e) {
+      e.preventDefault();
+      const roomId = document.getElementById('bookRoomId').value;
+      const date = document.getElementById('bookDate').value;
+      const title = document.getElementById('bookTitle').value.trim();
+      const mCh = document.getElementById('slotMorning').checked;
+      const aCh = document.getElementById('slotAfternoon').checked;
+
+      if (!title) {
+        Swal.fire({ icon: 'warning', title: 'กรุณากรอกวัตถุประสงค์ / หัวข้อการประชุม' });
+        return;
+      }
+
+      if (!mCh && !aCh) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง' });
+        return;
+      }
+
+      const slotsToBook = [];
+      if (mCh) slotsToBook.push('MORNING');
+      if (aCh) slotsToBook.push('AFTERNOON');
+
+      slotsToBook.forEach(slot => {
+        const newBooking = {
+          id: 'BK_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          roomId: roomId,
+          date: date,
+          slot: slot,
+          userId: currentUser.id,
+          userName: `${currentUser.name} (${currentUser.dept})`,
+          title: title,
+          createdAt: new Date().toISOString()
+        };
+
+        bookings.push(newBooking);
+        sendToGoogleSheets("ADD_BOOKING", newBooking);
+      });
+
+      localStorage.setItem('mr_bookings', JSON.stringify(bookings));
+
+      closeBookingModal();
+      Swal.fire({ icon: 'success', title: 'บันทึกการจองห้องประชุมสำเร็จ!' });
+      renderMonthlyCalendar();
+      renderBookingsTable();
+    }
+
+    function renderBookingsTable() {
+      const tbody = document.getElementById('bookingsTableBody');
+      const sorted = [...bookings].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+      if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">ยังไม่มีรายการจองในระบบ</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = sorted.map(b => {
+        const room = rooms.find(r => String(r.id).trim() === String(b.roomId).trim());
+        const canDelete = currentUser && (currentUser.role === 'ADMIN' || String(b.userId).trim() === String(currentUser.id).trim());
+
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-semibold text-slate-800">${formatShortThaiDate(b.date)}</td>
+            <td class="p-3 font-semibold text-indigo-900">${room ? room.name : b.roomId}</td>
+            <td class="p-3"><span class="text-xs font-bold px-2 py-1 rounded ${String(b.slot).trim() === 'MORNING' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${String(b.slot).trim() === 'MORNING' ? 'ช่วงเช้า' : 'ช่วงบ่าย'}</span></td>
+            <td class="p-3">${b.userName}</td>
+            <td class="p-3 text-slate-700 font-medium">${b.title}</td>
+            <td class="p-3 text-center">
+              ${canDelete ? `<button onclick="deleteBooking('${b.id}')" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash-can"></i></button>` : '<span class="text-slate-300"><i class="fa-solid fa-lock"></i></span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function deleteBooking(id) {
+      Swal.fire({
+        title: 'ยกเลิกการจอง?',
+        text: 'คุณต้องการยกเลิกรายการจองนี้ใช่หรือไม่',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'ยกเลิกรายการ',
+        cancelButtonText: 'ปิด'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          bookings = bookings.filter(b => String(b.id).trim() !== String(id).trim());
+          localStorage.setItem('mr_bookings', JSON.stringify(bookings));
+          sendToGoogleSheets("DELETE_BOOKING", { id: id });
+          renderMonthlyCalendar();
+          renderBookingsTable();
+          Toast.fire({ icon: 'success', title: 'ยกเลิกรายการจองเรียบร้อยแล้ว' });
+        }
+      });
+    }
+
+    function filterBookingsTable() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      document.querySelectorAll('#bookingsTableBody tr').forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+      });
+    }
+
+    function renderRoomsManagement() {
+      const container = document.getElementById('roomsListContainer');
+      container.innerHTML = rooms.map(r => `
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex justify-between items-start">
+              <h3 class="font-bold text-slate-800">${r.name}</h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${r.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${r.status}</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">ความจุ: ${r.capacity} คน | อุปกรณ์: ${r.equipment || '-'}</p>
+          </div>
+          <div class="flex space-x-2 border-t pt-3">
+            <button onclick="editRoom('${r.id}')" class="flex-1 bg-slate-100 text-slate-700 text-xs py-1.5 rounded"><i class="fa-solid fa-pen-to-square mr-1"></i>แก้ไข</button>
+            <button onclick="deleteRoom('${r.id}')" class="bg-red-50 text-red-600 text-xs px-3 py-1.5 rounded"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openRoomModal() {
+      document.getElementById('editRoomId').value = '';
+      document.getElementById('roomModalTitle').textContent = 'เพิ่มห้องประชุม';
+      document.getElementById('roomForm').reset();
+      document.getElementById('roomModal').classList.remove('hidden');
+    }
+    function closeRoomModal() { document.getElementById('roomModal').classList.add('hidden'); }
+
+    function editRoom(id) {
+      const r = rooms.find(x => String(x.id).trim() === String(id).trim());
+      if (!r) return;
+      document.getElementById('editRoomId').value = r.id;
+      document.getElementById('roomModalTitle').textContent = 'แก้ไขห้องประชุม';
+      document.getElementById('roomName').value = r.name;
+      document.getElementById('roomCapacity').value = r.capacity;
+      document.getElementById('roomEquipments').value = r.equipment;
+      document.getElementById('roomStatus').value = r.status;
+      document.getElementById('roomModal').classList.remove('hidden');
+    }
+
+    function handleRoomSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('editRoomId').value;
+      const payload = {
+        id: id || 'ROOM_' + Date.now(),
+        name: document.getElementById('roomName').value,
+        capacity: document.getElementById('roomCapacity').value || 10,
+        equipment: document.getElementById('roomEquipments').value,
+        status: document.getElementById('roomStatus').value
+      };
+
+      if (id) {
+        const idx = rooms.findIndex(x => String(x.id).trim() === String(id).trim());
+        if (idx !== -1) rooms[idx] = payload;
+        sendToGoogleSheets("EDIT_ROOM", payload);
+      } else {
+        rooms.push(payload);
+        sendToGoogleSheets("ADD_ROOM", payload);
+      }
+
+      localStorage.setItem('mr_rooms', JSON.stringify(rooms));
+
+      closeRoomModal();
+      Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลห้องประชุมสำเร็จ' });
+      renderRoomsSelect();
+      renderMonthlyCalendar();
+      renderRoomsManagement();
+    }
+
+    function deleteRoom(id) {
+      Swal.fire({
+        title: 'ยืนยันการลบห้องประชุม?',
+        text: 'การลบจะไม่มีผลย้อนกลับ',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'ลบห้องประชุม'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          rooms = rooms.filter(x => String(x.id).trim() !== String(id).trim());
+          localStorage.setItem('mr_rooms', JSON.stringify(rooms));
+          sendToGoogleSheets("DELETE_ROOM", { id: id });
+          renderRoomsSelect();
+          renderMonthlyCalendar();
+          renderRoomsManagement();
+          Toast.fire({ icon: 'success', title: 'ลบห้องประชุมเรียบร้อยแล้ว' });
+        }
+      });
+    }
+
+    function renderUsersManagement() {
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = users.map(u => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-3 font-semibold">${u.name}</td>
+          <td class="p-3 text-slate-500">${u.email}</td>
+          <td class="p-3">${u.dept}</td>
+          <td class="p-3"><span class="text-xs font-bold px-2 py-0.5 rounded ${u.role === 'ADMIN' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">${u.role}</span></td>
+          <td class="p-3 text-center">
+            ${users.length > 1 ? `<button onclick="deleteUser('${u.id}')" class="text-red-500 p-1"><i class="fa-solid fa-trash-can"></i></button>` : '-'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openUserModal() { document.getElementById('userForm').reset(); document.getElementById('userModal').classList.remove('hidden'); }
+    function closeUserModal() { document.getElementById('userModal').classList.add('hidden'); }
+
+    function handleUserSubmit(e) {
+      e.preventDefault();
+      const newUser = {
+        id: 'USR_' + Date.now(),
+        name: document.getElementById('newUserName').value,
+        email: document.getElementById('newUserEmail').value,
+        password: String(document.getElementById('newUserPassword').value).trim(),
+        dept: document.getElementById('newUserDept').value,
+        role: document.getElementById('newUserRole').value
+      };
+      users.push(newUser);
+      localStorage.setItem('mr_users', JSON.stringify(users));
+      sendToGoogleSheets("ADD_USER", newUser);
+      closeUserModal();
+      renderUsersManagement();
+      Swal.fire({ icon: 'success', title: 'เพิ่มผู้ใช้งานสำเร็จ!' });
+    }
+
+    function deleteUser(id) {
+      Swal.fire({
+        title: 'ยืนยันการลบผู้ใช้?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'ลบผู้ใช้'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          users = users.filter(u => String(u.id).trim() !== String(id).trim());
+          localStorage.setItem('mr_users', JSON.stringify(users));
+          sendToGoogleSheets("DELETE_USER", { id: id });
+          renderUsersManagement();
+          Toast.fire({ icon: 'success', title: 'ลบผู้ใช้งานเรียบร้อยแล้ว' });
+        }
+      });
+    }
+
+    // COMMUNICATION WITH GOOGLE SHEETS
+    function fetchDataFromSheets(showToast = false) {
+      const url = DEFAULT_WEB_APP_URL;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            if (data.rooms && data.rooms.length > 1) {
+              rooms = data.rooms.slice(1).map(r => ({ id: String(r[0]).trim(), name: r[1], capacity: r[2], equipment: r[3], status: r[4] }));
+              localStorage.setItem('mr_rooms', JSON.stringify(rooms));
+            }
+            if (data.users && data.users.length > 1) {
+              users = data.users.slice(1).map(u => ({ id: String(u[0]).trim(), name: u[1], email: u[2], password: String(u[3]).trim(), dept: u[4], role: u[5] }));
+              localStorage.setItem('mr_users', JSON.stringify(users));
+            }
+            if (data.bookings && data.bookings.length > 1) {
+              bookings = data.bookings.slice(1).map(b => {
+                let formattedDate = String(b[2]).split('T')[0].trim();
+                return {
+                  id: String(b[0]).trim(),
+                  roomId: String(b[1]).trim(),
+                  date: formattedDate,
+                  slot: String(b[3]).trim(),
+                  userId: String(b[4]).trim(),
+                  userName: b[5],
+                  title: b[6],
+                  createdAt: b[7]
+                };
+              });
+              localStorage.setItem('mr_bookings', JSON.stringify(bookings));
+            }
+
+            if (currentUser) {
+              const matched = users.find(u => String(u.id).trim() === String(currentUser.id).trim() || String(u.email).trim() === String(currentUser.email).trim());
+              if (matched) {
+                currentUser = matched;
+                localStorage.setItem('mr_current_user', JSON.stringify(currentUser));
+              }
+            }
+
+            renderAuthHeader();
+            renderRoomsSelect();
+            renderMonthlyCalendar();
+            renderBookingsTable();
+            renderRoomsManagement();
+            renderUsersManagement();
+
+            if (showToast) {
+              Toast.fire({ icon: 'success', title: 'ซิงค์ข้อมูลจาก Google Sheets สำเร็จ' });
+            }
+          }
+        })
+        .catch(err => console.log('Error fetching from sheets:', err));
+    }
+
+    function sendToGoogleSheets(action, payload) {
+      const url = DEFAULT_WEB_APP_URL;
+      const params = new URLSearchParams();
+      params.append('action', action);
+      for (let key in payload) {
+        params.append(key, payload[key]);
+      }
+
+      fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      }).then(() => {
+        setTimeout(() => fetchDataFromSheets(false), 1500);
+      }).catch(err => console.log('Sheets Sync Error:', err));
+    }
+  </script>
+</body>
+</html>
