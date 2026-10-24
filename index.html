@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจองห้องประชุม</title>
+  <title>ระบบจองห้องประชุม (Meeting Room Booking System)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome Icons -->
@@ -22,7 +22,7 @@
 
   <!-- EMBEDDED GOOGLE APPS SCRIPT URL -->
   <script>
-    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbywE3gn_u8lZNuaQPtQkuURSbNWVPYVuihxHSHBQhQetxr-NENhQV_It25GZE1RmuBzYw/exec";
+    const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyZl3ChkZWaJD5m1A99JVWFUTHSnMY05vi-YsbE546n9KI27kGwQr8_24pqdWDzIXhpfQ/exec";
   </script>
 
   <!-- Header & Navigation -->
@@ -75,14 +75,10 @@
     <!-- 1. MONTHLY CALENDAR VIEW TAB -->
     <div id="view-monthly" class="tab-content space-y-4 animate-fadeIn">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center space-x-3">
-          <label class="text-sm font-bold text-slate-700 flex items-center space-x-1.5">
-            <i class="fa-solid fa-door-open text-indigo-600"></i>
-            <span>เลือกดูห้องประชุม:</span>
-          </label>
-          <select id="monthlyRoomSelect" onchange="renderMonthlyCalendar()" class="border-2 border-indigo-200 rounded-lg text-sm font-semibold px-3 py-1.5 bg-indigo-50/50 text-indigo-900 focus:outline-none focus:border-indigo-500">
-            <!-- Active Rooms -->
-          </select>
+        
+        <!-- เปลี่ยนจาก Dropdown เป็น ปุ่มเลือกห้องประชุมแบบแท็บ -->
+        <div class="flex items-center space-x-2 overflow-x-auto py-1" id="roomButtonsContainer">
+          <!-- JS Rendered Buttons -->
         </div>
 
         <div class="flex items-center space-x-2">
@@ -147,8 +143,11 @@
                 <th class="p-3">วันที่จอง</th>
                 <th class="p-3">ห้องประชุม</th>
                 <th class="p-3">ช่วงเวลา</th>
-                <th class="p-3">ผู้จอง (แผนก)</th>
-                <th class="p-3">วัตถุประสงค์</th>
+                <th class="p-3">ผู้จอง</th>
+                <th class="p-3">เรือง</th>
+                <th class="p-3">จำนวนคน / อุปกรณ์</th>
+                <th class="p-3">ตำแหน่ง</th>
+                <th class="p-3">หมายเหตุ</th>
                 <th class="p-3 text-center">จัดการ</th>
               </tr>
             </thead>
@@ -267,14 +266,15 @@
 
   <!-- MODAL: BOOKING FORM -->
   <div id="bookingModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden animate-fadeIn">
-      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden animate-fadeIn max-h-[90vh] flex flex-col">
+      <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center shrink-0">
         <h3 class="font-bold text-lg"><i class="fa-solid fa-calendar-plus mr-2"></i>จองห้องประชุม</h3>
         <button onclick="closeBookingModal()" class="text-slate-300 hover:text-white text-xl">&times;</button>
       </div>
-      <form id="bookingForm" onsubmit="handleBookingSubmit(event)" class="p-6 space-y-4">
+      
+      <form id="bookingForm" onsubmit="handleBookingSubmit(event)" class="p-6 space-y-4 overflow-y-auto flex-grow">
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1">ชื่อผู้จอง</label>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ผู้จอง</label>
           <input type="text" id="bookUserName" readonly class="w-full bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium text-slate-700">
         </div>
 
@@ -288,6 +288,7 @@
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">วันที่ต้องการจอง <span class="text-red-500">*</span></label>
           <input type="date" id="bookDate" onchange="checkTimeSlotAvailability()" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          <p id="bookingDateWarning" class="text-xs text-amber-600 mt-1 hidden"><i class="fa-solid fa-triangle-exclamation mr-1"></i>ต้องจองล่วงหน้าอย่างน้อย 3 วัน</p>
         </div>
 
         <div>
@@ -318,7 +319,45 @@
           <textarea id="bookTitle" rows="2" required placeholder="เช่น ประชุมทีม" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
         </div>
 
-        <div class="flex justify-end space-x-2 pt-2 border-t">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">จำนวนผู้เข้าร่วม (คน) <span class="text-red-500">*</span></label>
+            <input type="number" id="bookAttendees" min="1" required placeholder="ระบุจำนวนคน" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">อุปกรณ์ที่ขอใช้ <span class="text-xs text-slate-400 font-normal">[ไม่บังคับ]</span></label>
+            <input type="text" id="bookEquipment" placeholder="เช่น โปรเจคเตอร์, ไมค์ลอย" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <!-- ตำแหน่ง (เลือกได้หลายตัว) -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">ตำแหน่ง <span class="text-xs text-slate-400 font-normal">(เลือกได้มากกว่า 1 ข้อ)</span></label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 border border-slate-200 rounded-lg p-3 bg-slate-50 text-sm">
+            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" name="position" value="ตัวแทน" class="rounded text-indigo-600"><span>ตัวแทน</span></label>
+            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" name="position" value="หน่วย" class="rounded text-indigo-600"><span>หน่วย</span></label>
+            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" name="position" value="ศูนย์" class="rounded text-indigo-600"><span>ศูนย์</span></label>
+            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" name="position" value="ภาค" class="rounded text-indigo-600"><span>ภาค</span></label>
+            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" name="position" value="ฝ่าย" class="rounded text-indigo-600"><span>ฝ่าย</span></label>
+            <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" name="position" value="อื่นๆ" class="rounded text-indigo-600"><span>อื่นๆ</span></label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">หมายเหตุ</label>
+          <textarea id="bookNote" rows="2" placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
+        <!-- เพิ่มข้อความหลักเกณฑ์การขอใช้ห้องประชุมตามที่กำหนด -->
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 space-y-1">
+          <p class="font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i>หลักเกณฑ์การขอใช้ห้องประชุม</p>
+          <p>1. กรณีจอง ล่วงหน้าอย่างน้อย 3 วัน</p>
+          <p>2. กรณีขอยกเลิก ล่วงหน้าอย่างน้อย 1 วัน</p>
+          <p>3. หลังเลิกประชุมให้ปิดระบบแสงสว่าง/เครื่องปรับอากาศและปิดประตูเข้า-ออกทุกจุดให้เรียบร้อย</p>
+          <p>4. แจ้งผู้ดูแลห้องประชุม/ผู้บริหารสาขา เมื่อใช้ห้องประชุมเสร็จทุกครั้ง เพื่อตรวจสอบความเรียบร้อยเกี่ยวกับอุปกรณ์ภายในห้องประชุม และบริเวณโดยรอบ หากมีความเสียหายเกิดขึ้น ในกรณีที่ความเสียหายนั้นมิได้เกิดจากการเสื่อมสภาพตามอายุการใช้งาน ผู้ขอใช้ห้องประชุมจะต้องรับผิดชอบทั้งหมด</p>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t shrink-0">
           <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-slate-100">ยกเลิก</button>
           <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">ยืนยันการจอง</button>
         </div>
@@ -408,6 +447,7 @@
 
     let currentUser = JSON.parse(localStorage.getItem('mr_current_user')) || null;
     let currentViewDate = new Date();
+    let selectedRoomId = null; // เก็บห้องที่เลือกดูในหน้าปฏิทินแบบปุ่ม
 
     const Toast = Swal.mixin({
       toast: true,
@@ -420,7 +460,7 @@
     window.onload = function() {
       localStorage.setItem('mr_webapp_url', DEFAULT_WEB_APP_URL);
       renderAuthHeader();
-      renderRoomsSelect();
+      renderRoomsButtons();
       renderMonthlyCalendar();
       renderBookingsTable();
       fetchDataFromSheets();
@@ -623,13 +663,30 @@
       }
     }
 
-    function renderRoomsSelect() {
-      const monthlySelect = document.getElementById('monthlyRoomSelect');
+    // สร้างปุ่มเลือกห้องประชุมแทน Dropdown
+    function renderRoomsButtons() {
+      const container = document.getElementById('roomButtonsContainer');
       const bookRoomSelect = document.getElementById('bookRoomId');
       const activeRooms = rooms.filter(r => r.status === 'ACTIVE');
 
-      monthlySelect.innerHTML = activeRooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+      if (activeRooms.length > 0 && (!selectedRoomId || !activeRooms.some(r => r.id === selectedRoomId))) {
+        selectedRoomId = activeRooms[0].id;
+      }
+
+      container.innerHTML = `<span class="text-xs font-bold text-slate-600 mr-1"><i class="fa-solid fa-door-open text-indigo-600 mr-1"></i>ห้อง:</span>` + 
+        activeRooms.map(r => `
+          <button onclick="selectRoomTab('${r.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm ${selectedRoomId === r.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+            ${r.name}
+          </button>
+        `).join('');
+
       bookRoomSelect.innerHTML = activeRooms.map(r => `<option value="${r.id}">${r.name} (จุ ${r.capacity} คน)</option>`).join('');
+    }
+
+    function selectRoomTab(roomId) {
+      selectedRoomId = roomId;
+      renderRoomsButtons();
+      renderMonthlyCalendar();
     }
 
     function changeMonth(direction) {
@@ -643,8 +700,8 @@
     }
 
     function renderMonthlyCalendar() {
-      const selectedRoomId = document.getElementById('monthlyRoomSelect').value;
-      const room = rooms.find(r => String(r.id).trim() === String(selectedRoomId).trim()) || rooms[0];
+      const activeRooms = rooms.filter(r => r.status === 'ACTIVE');
+      const room = rooms.find(r => String(r.id).trim() === String(selectedRoomId).trim()) || activeRooms[0];
 
       document.getElementById('monthYearDisplay').textContent = getThaiMonthYear(currentViewDate);
 
@@ -659,6 +716,8 @@
           </div>
           <div class="text-xs text-slate-300">เดือน <span class="text-amber-300 font-semibold">${getThaiMonthYear(currentViewDate)}</span></div>
         `;
+      } else {
+        document.getElementById('roomSummaryBanner').innerHTML = `<div class="text-xs text-slate-300">ยังไม่มีห้องประชุมในระบบ</div>`;
       }
 
       const year = currentViewDate.getFullYear();
@@ -679,21 +738,22 @@
       const todayYMD = formatYMD(new Date());
 
       for (let day = 1; day <= totalDays; day++) {
-        let currDate = new Date(year, month, day);
-        let dateStr = formatYMD(currDate);
+        let mMonth = String(month + 1).padStart(2, '0');
+        let mDay = String(day).padStart(2, '0');
+        let dateStr = `${year}-${mMonth}-${mDay}`;
         let isToday = dateStr === todayYMD;
 
-        let mBk = bookings.find(b => {
+        let mBk = room ? bookings.find(b => {
           let bDate = String(b.date).split('T')[0].trim();
           let bRoom = String(b.roomId).trim();
-          return bRoom === String(room?.id).trim() && bDate === dateStr && String(b.slot).trim() === 'MORNING';
-        });
+          return bRoom === String(room.id).trim() && bDate === dateStr && String(b.slot).trim() === 'MORNING';
+        }) : null;
 
-        let aBk = bookings.find(b => {
+        let aBk = room ? bookings.find(b => {
           let bDate = String(b.date).split('T')[0].trim();
           let bRoom = String(b.roomId).trim();
-          return bRoom === String(room?.id).trim() && bDate === dateStr && String(b.slot).trim() === 'AFTERNOON';
-        });
+          return bRoom === String(room.id).trim() && bDate === dateStr && String(b.slot).trim() === 'AFTERNOON';
+        }) : null;
 
         const getDeptStr = (bk) => {
           if (!bk) return '';
@@ -709,8 +769,8 @@
             <div>
               <div class="flex justify-between items-center mb-1.5">
                 <span class="text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-slate-800'}">${day}</span>
-                ${(!mBk || !aBk) ? `
-                  <button onclick="quickBookIntent('${room?.id}', '${dateStr}')" class="text-[10px] bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-semibold px-1.5 py-0.5 rounded border border-indigo-200">+ จอง</button>
+                ${(room && (!mBk || !aBk)) ? `
+                  <button onclick="quickBookIntent('${room.id}', '${dateStr}')" class="text-[10px] bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-semibold px-1.5 py-0.5 rounded border border-indigo-200">+ จอง</button>
                 ` : ''}
               </div>
               <div class="space-y-1">
@@ -738,7 +798,22 @@
     function openBookingModal() {
       if (!currentUser) return;
       document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
-      document.getElementById('bookDate').value = formatYMD(new Date());
+      
+      // ตั้งค่าเริ่มต้นวันที่เลือกเป็นวันถัดไปล่วงหน้าอย่างน้อย 3 วัน
+      let minDate = new Date();
+      minDate.setDate(minDate.getDate() + 3);
+      document.getElementById('bookDate').value = formatYMD(minDate);
+      document.getElementById('bookDate').min = formatYMD(minDate); // ล็อคไม่ให้เลือกย้อนหลังเกินกฎ 3 วันสำหรับ User ทั่วไป
+      if(currentUser.role === 'ADMIN') {
+        document.getElementById('bookDate').min = ''; // Admin จองได้อิสระ
+      }
+
+      document.getElementById('bookTitle').value = '';
+      document.getElementById('bookAttendees').value = '';
+      document.getElementById('bookEquipment').value = '';
+      document.getElementById('bookNote').value = '';
+      document.querySelectorAll('input[name="position"]').forEach(cb => cb.checked = false);
+
       checkTimeSlotAvailability();
       document.getElementById('bookingModal').classList.remove('hidden');
     }
@@ -748,6 +823,13 @@
       document.getElementById('bookUserName').value = `${currentUser.name} (${currentUser.dept})`;
       document.getElementById('bookRoomId').value = roomId;
       document.getElementById('bookDate').value = dateStr;
+      
+      document.getElementById('bookTitle').value = '';
+      document.getElementById('bookAttendees').value = '';
+      document.getElementById('bookEquipment').value = '';
+      document.getElementById('bookNote').value = '';
+      document.querySelectorAll('input[name="position"]').forEach(cb => cb.checked = false);
+
       checkTimeSlotAvailability();
       document.getElementById('bookingModal').classList.remove('hidden');
     }
@@ -761,8 +843,24 @@
       const afternoonChk = document.getElementById('slotAfternoon');
       const mStatus = document.getElementById('slotMorningStatus');
       const aStatus = document.getElementById('slotAfternoonStatus');
+      const warningEl = document.getElementById('bookingDateWarning');
 
       if (!roomId || !date) return;
+
+      // ตรวจสอบเงื่อนไขการจองล่วงหน้าอย่างน้อย 3 วัน สำหรับ User ทั่วไป
+      if (currentUser && currentUser.role !== 'ADMIN') {
+        let selectedDate = new Date(date);
+        let today = new Date();
+        today.setHours(0,0,0,0);
+        let diffTime = selectedDate - today;
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 3) {
+          warningEl.classList.remove('hidden');
+        } else {
+          warningEl.classList.add('hidden');
+        }
+      }
 
       const mBk = bookings.find(b => String(b.roomId).trim() === String(roomId).trim() && String(b.date).split('T')[0].trim() === String(date).trim() && String(b.slot).trim() === 'MORNING');
       const aBk = bookings.find(b => String(b.roomId).trim() === String(roomId).trim() && String(b.date).split('T')[0].trim() === String(date).trim() && String(b.slot).trim() === 'AFTERNOON');
@@ -789,17 +887,36 @@
       const roomId = document.getElementById('bookRoomId').value;
       const date = document.getElementById('bookDate').value;
       const title = document.getElementById('bookTitle').value.trim();
+      const attendees = document.getElementById('bookAttendees').value.trim();
+      const equipment = document.getElementById('bookEquipment').value.trim();
+      const note = document.getElementById('bookNote').value.trim();
+      
+      // เก็บค่าตำแหน่งที่เลือกหลายตัว
+      const positions = Array.from(document.querySelectorAll('input[name="position"]:checked')).map(cb => cb.value).join(', ');
+
       const mCh = document.getElementById('slotMorning').checked;
       const aCh = document.getElementById('slotAfternoon').checked;
 
-      if (!title) {
-        Swal.fire({ icon: 'warning', title: 'กรุณากรอกวัตถุประสงค์ / หัวข้อการประชุม' });
+      if (!title || !attendees) {
+        Swal.fire({ icon: 'warning', title: 'กรุณากรอกหัวข้อและจำนวนผู้เข้าร่วมให้ครบถ้วน' });
         return;
       }
 
       if (!mCh && !aCh) {
         Swal.fire({ icon: 'warning', title: 'กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง' });
         return;
+      }
+
+      // เช็คกฎล่วงหน้า 3 วันสำหรับ User ทั่วไป
+      if (currentUser && currentUser.role !== 'ADMIN') {
+        let selectedDate = new Date(date);
+        let today = new Date();
+        today.setHours(0,0,0,0);
+        let diffDays = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
+        if (diffDays < 3) {
+          Swal.fire({ icon: 'error', title: 'ไม่สามารถจองได้', text: 'ต้องทำการจองล่วงหน้าอย่างน้อย 3 วันตามหลักเกณฑ์' });
+          return;
+        }
       }
 
       const slotsToBook = [];
@@ -815,6 +932,10 @@
           userId: currentUser.id,
           userName: `${currentUser.name} (${currentUser.dept})`,
           title: title,
+          attendees: attendees,
+          equipment: equipment || '-',
+          positions: positions || '-',
+          note: note || '-',
           createdAt: new Date().toISOString()
         };
 
@@ -835,13 +956,29 @@
       const sorted = [...bookings].sort((a,b) => new Date(b.date) - new Date(a.date));
 
       if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-400">ยังไม่มีรายการจองในระบบ</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-slate-400">ยังไม่มีรายการจองในระบบ</td></tr>';
         return;
       }
 
       tbody.innerHTML = sorted.map(b => {
         const room = rooms.find(r => String(r.id).trim() === String(b.roomId).trim());
-        const canDelete = currentUser && (currentUser.role === 'ADMIN' || String(b.userId).trim() === String(currentUser.id).trim());
+        
+        // เช็คสิทธิ์การยกเลิก: User ต้องยกเลิกก่อนอย่างน้อย 1 วัน ส่วน Admin ยกเลิกได้ตลอด
+        let canDelete = false;
+        if (currentUser) {
+          if (currentUser.role === 'ADMIN') {
+            canDelete = true;
+          } else if (String(b.userId).trim() === String(currentUser.id).trim()) {
+            let bookingDate = new Date(b.date);
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            let diffDays = Math.ceil((bookingDate - today) / (1000 * 60 * 60 * 24));
+            // ถ้าเหลือเวลามากกว่าหรือเท่ากับ 1 วัน ถึงจะกดลบ/ยกเลิกเองได้
+            if (diffDays >= 1) {
+              canDelete = true;
+            }
+          }
+        }
 
         return `
           <tr class="hover:bg-slate-50">
@@ -850,8 +987,11 @@
             <td class="p-3"><span class="text-xs font-bold px-2 py-1 rounded ${String(b.slot).trim() === 'MORNING' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${String(b.slot).trim() === 'MORNING' ? 'ช่วงเช้า' : 'ช่วงบ่าย'}</span></td>
             <td class="p-3">${b.userName}</td>
             <td class="p-3 text-slate-700 font-medium">${b.title}</td>
+            <td class="p-3 text-xs">${b.attendees || '-'} คน<br><span class="text-slate-400">${b.equipment || ''}</span></td>
+            <td class="p-3 text-xs text-indigo-700 font-semibold">${b.positions || '-'}</td>
+            <td class="p-3 text-xs text-slate-500">${b.note || '-'}</td>
             <td class="p-3 text-center">
-              ${canDelete ? `<button onclick="deleteBooking('${b.id}')" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash-can"></i></button>` : '<span class="text-slate-300"><i class="fa-solid fa-lock"></i></span>'}
+              ${canDelete ? `<button onclick="deleteBooking('${b.id}')" class="text-red-500 hover:text-red-700 p-1" title="ยกเลิกการจอง"><i class="fa-solid fa-trash-can"></i></button>` : '<span class="text-slate-300" title="เลยกำหนดขอยกเลิก (ต้องล่วงหน้าอย่างน้อย 1 วัน)"><i class="fa-solid fa-lock"></i></span>'}
             </td>
           </tr>
         `;
@@ -950,7 +1090,7 @@
 
       closeRoomModal();
       Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลห้องประชุมสำเร็จ' });
-      renderRoomsSelect();
+      renderRoomsButtons();
       renderMonthlyCalendar();
       renderRoomsManagement();
     }
@@ -968,7 +1108,7 @@
           rooms = rooms.filter(x => String(x.id).trim() !== String(id).trim());
           localStorage.setItem('mr_rooms', JSON.stringify(rooms));
           sendToGoogleSheets("DELETE_ROOM", { id: id });
-          renderRoomsSelect();
+          renderRoomsButtons();
           renderMonthlyCalendar();
           renderRoomsManagement();
           Toast.fire({ icon: 'success', title: 'ลบห้องประชุมเรียบร้อยแล้ว' });
@@ -1047,16 +1187,23 @@
             }
             if (data.bookings && data.bookings.length > 1) {
               bookings = data.bookings.slice(1).map(b => {
-                let formattedDate = String(b[2]).split('T')[0].trim();
+                // ดึงเฉพาะสตริง YYYY-MM-DD ตัดส่วนเวลา T... ออกให้หมด
+                let rawDate = String(b[2] || '');
+                let formattedDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate.substring(0, 10);
+                
                 return {
                   id: String(b[0]).trim(),
                   roomId: String(b[1]).trim(),
-                  date: formattedDate,
+                  date: formattedDate.trim(),
                   slot: String(b[3]).trim(),
                   userId: String(b[4]).trim(),
                   userName: b[5],
                   title: b[6],
-                  createdAt: b[7]
+                  attendees: b[7] || '-',
+                  equipment: b[8] || '-',
+                  positions: b[9] || '-',
+                  note: b[10] || '-',
+                  createdAt: b[11]
                 };
               });
               localStorage.setItem('mr_bookings', JSON.stringify(bookings));
@@ -1071,7 +1218,7 @@
             }
 
             renderAuthHeader();
-            renderRoomsSelect();
+            renderRoomsButtons();
             renderMonthlyCalendar();
             renderBookingsTable();
             renderRoomsManagement();
