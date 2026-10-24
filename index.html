@@ -20,6 +20,30 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
+  <!-- LOADING SCREEN: แสดงจนกว่าจะดึงข้อมูลจาก Google Sheets สำเร็จ -->
+  <div id="appLoader" class="fixed inset-0 z-[100] bg-slate-100 flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-8 text-center">
+      <div class="mx-auto mb-4 w-14 h-14 rounded-xl bg-indigo-700 text-white flex items-center justify-center">
+        <i class="fa-solid fa-calendar-days text-2xl"></i>
+      </div>
+      <h2 class="text-lg font-bold text-slate-800">ระบบจองห้องประชุม</h2>
+
+      <div id="loaderLoading" class="mt-5">
+        <i class="fa-solid fa-spinner fa-spin text-indigo-600 text-2xl"></i>
+        <p class="text-sm text-slate-500 mt-3">กำลังโหลดข้อมูลจาก Google Sheets...</p>
+      </div>
+
+      <div id="loaderError" class="mt-5 hidden">
+        <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl"></i>
+        <p class="text-sm text-slate-700 font-semibold mt-3">โหลดข้อมูลไม่สำเร็จ</p>
+        <p id="loaderErrorMsg" class="text-xs text-slate-500 mt-1 break-words"></p>
+        <button onclick="initialLoad()" class="mt-4 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold">
+          <i class="fa-solid fa-rotate mr-1"></i>ลองใหม่
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- EMBEDDED GOOGLE APPS SCRIPT URL -->
   <script>
     const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzj5EcAr-eI2DPicaM20RLqSJfvsAlzsLqlvfPGZywJumNcZ_YyWIJtqUE8rEDgh1n4wQ/exec";
@@ -505,12 +529,12 @@
     // =====================================================================
     // State
     // =====================================================================
-    let rooms = loadLS('mr_rooms', []);
-    let users = loadLS('mr_users', []);
-    let bookings = loadLS('mr_bookings', []);
-    if (!Array.isArray(rooms)) rooms = [];
-    if (!Array.isArray(users)) users = [];
-    if (!Array.isArray(bookings)) bookings = [];
+    // ข้อมูลทั้งหมดมาจาก Google Sheets เท่านั้น (ไม่เก็บแคชข้อมูล/รหัสผ่านไว้ในเบราว์เซอร์)
+    let rooms = [];
+    let users = [];
+    let bookings = [];
+    ['mr_rooms', 'mr_users', 'mr_bookings', 'mr_webapp_url'].forEach(k => removeLS(k)); // ล้างแคชรุ่นเก่า
+    let appLoaded = false;         // true เมื่อดึงข้อมูลครั้งแรกสำเร็จ
 
     let currentUser = loadLS('mr_current_user', null);
     let currentViewDate = new Date();
@@ -592,10 +616,42 @@
     // Init
     // =====================================================================
     window.onload = function () {
-      renderAll();
-      fetchDataFromSheets();
+      initialLoad();
       startAutoSync();
     };
+
+    // โหลดข้อมูลครั้งแรก: แสดงหน้าโหลดจนกว่าจะได้ข้อมูลจาก Google Sheets สำเร็จ
+    const INITIAL_LOAD_TIMEOUT_MS = 25000;
+    let initialLoadTimer = null;
+
+    function showLoader(state, message) {
+      document.getElementById('appLoader').classList.remove('hidden');
+      document.getElementById('loaderLoading').classList.toggle('hidden', state !== 'loading');
+      document.getElementById('loaderError').classList.toggle('hidden', state !== 'error');
+      if (state === 'error') document.getElementById('loaderErrorMsg').textContent = message || '';
+    }
+    function hideLoader() { document.getElementById('appLoader').classList.add('hidden'); }
+
+    function initialLoad() {
+      showLoader('loading');
+      if (initialLoadTimer) clearTimeout(initialLoadTimer);
+      initialLoadTimer = setTimeout(() => {
+        if (!appLoaded) showLoader('error', 'เชื่อมต่อ Google Sheets ใช้เวลานานเกินไป กรุณาตรวจสอบอินเทอร์เน็ตหรือการ Deploy สคริปต์');
+      }, INITIAL_LOAD_TIMEOUT_MS);
+
+      fetchDataFromSheets(false, {
+        initial: true,
+        onSuccess: () => {
+          appLoaded = true;
+          clearTimeout(initialLoadTimer);
+          hideLoader();
+        },
+        onFail: (msg) => {
+          clearTimeout(initialLoadTimer);
+          if (!appLoaded) showLoader('error', msg);
+        }
+      });
+    }
 
     function renderAll() {
       renderAuthHeader();
@@ -609,10 +665,10 @@
     function startAutoSync() {
       if (syncTimer) clearInterval(syncTimer);
       syncTimer = setInterval(() => {
-        if (!document.hidden && inFlight === 0) fetchDataFromSheets(false);
+        if (appLoaded && !document.hidden && inFlight === 0) fetchDataFromSheets(false);
       }, SYNC_INTERVAL_MS);
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && inFlight === 0) fetchDataFromSheets(false);
+        if (appLoaded && !document.hidden && inFlight === 0) fetchDataFromSheets(false);
       });
     }
 
@@ -759,7 +815,6 @@
       freshUser.password = newP;
       currentUser.password = newP;
       saveLS('mr_current_user', currentUser);
-      saveLS('mr_users', users);
 
       // ซิงค์กลับอัตโนมัติหลังบันทึกเสร็จ (ไม่ต้องสั่งดึงข้อมูลซ้ำตรงนี้ เพราะจะได้รหัสเก่ากลับมาทับ)
       sendToGoogleSheets('UPDATE_PASSWORD', { id: currentUser.id, newPassword: newP });
@@ -1097,7 +1152,6 @@
         sendToGoogleSheets('ADD_BOOKING', newBooking);
       });
 
-      saveLS('mr_bookings', bookings);
 
       closeBookingModal();
       Swal.fire({ icon: 'success', title: 'บันทึกการจองห้องประชุมสำเร็จ!' });
@@ -1112,9 +1166,17 @@
 
     function renderBookingsTable() {
       const tbody = document.getElementById('bookingsTableBody');
+      // เรียง: วันที่จอง (น้อย -> มาก) > ชื่อห้องประชุม (ก -> ฮ / A -> Z) > ช่วงเวลา (เช้าก่อนบ่าย)
+      const roomNameOf = (b) => {
+        const r = rooms.find(x => sameId(x.id, b.roomId));
+        return String(r ? r.name : b.roomId);
+      };
       const sorted = [...bookings].sort((a, b) => {
-        const d = String(b.date).localeCompare(String(a.date));
-        return d !== 0 ? d : slotOrder(a.slot) - slotOrder(b.slot);
+        const d = String(a.date).localeCompare(String(b.date));
+        if (d !== 0) return d;
+        const rm = roomNameOf(a).localeCompare(roomNameOf(b), 'th', { numeric: true, sensitivity: 'base' });
+        if (rm !== 0) return rm;
+        return slotOrder(a.slot) - slotOrder(b.slot);
       });
 
       if (sorted.length === 0) {
@@ -1180,7 +1242,6 @@
         if (result.isConfirmed) {
           bookings = bookings.filter(x => !sameId(x.id, id));
           pendingAddIds.delete(String(id).trim());
-          saveLS('mr_bookings', bookings);
           sendToGoogleSheets('DELETE_BOOKING', { id: id });
           renderMonthlyCalendar();
           renderBookingsTable();
@@ -1267,7 +1328,6 @@
         sendToGoogleSheets('ADD_ROOM', payload);
       }
 
-      saveLS('mr_rooms', rooms);
 
       closeRoomModal();
       Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลห้องประชุมสำเร็จ' });
@@ -1292,7 +1352,6 @@
       }).then((result) => {
         if (result.isConfirmed) {
           rooms = rooms.filter(x => !sameId(x.id, id));
-          saveLS('mr_rooms', rooms);
           sendToGoogleSheets('DELETE_ROOM', { id: id });
           renderRoomsButtons();
           renderMonthlyCalendar();
@@ -1394,7 +1453,6 @@
 
         u.name = name; u.email = email; u.dept = dept; u.role = role;
         if (pw) u.password = pw;
-        saveLS('mr_users', users);
         sendToGoogleSheets('EDIT_USER', { id: u.id, name: u.name, email: u.email, password: u.password, dept: u.dept, role: u.role });
 
         if (currentUser && sameId(currentUser.id, u.id)) {
@@ -1415,7 +1473,6 @@
           role: role
         };
         users.push(newUser);
-        saveLS('mr_users', users);
         sendToGoogleSheets('ADD_USER', newUser);
         closeUserModal();
         renderUsersManagement();
@@ -1447,7 +1504,6 @@
       }).then((result) => {
         if (result.isConfirmed) {
           users = users.filter(x => !sameId(x.id, id));
-          saveLS('mr_users', users);
           sendToGoogleSheets('DELETE_USER', { id: id });
           renderUsersManagement();
           Toast.fire({ icon: 'success', title: 'ลบผู้ใช้งานเรียบร้อยแล้ว' });
@@ -1458,24 +1514,36 @@
     // =====================================================================
     // Google Sheets communication
     // =====================================================================
-    function fetchDataFromSheets(showToast = false) {
+    // opts: { initial, onSuccess, onFail } ใช้กับการโหลดครั้งแรก
+    function fetchDataFromSheets(showToast = false, opts = {}) {
       const seq = ++fetchSeq;
       const url = DEFAULT_WEB_APP_URL + '?action=GET_ALL_DATA&t=' + Date.now();
 
+      const fail = (msg) => {
+        if (seq !== fetchSeq) return;
+        if (opts.onFail) opts.onFail(msg || 'ไม่สามารถเชื่อมต่อ Google Sheets ได้');
+      };
+
       const onData = (data) => {
-        if (seq !== fetchSeq) return;   // มีการดึงใหม่กว่าแล้ว ทิ้งผลเก่า
-        if (inFlight > 0) return;       // กำลังเขียนข้อมูลอยู่ รอรอบหลัง กันข้อมูลเก่าทับ
-        try { processFetchedData(data, showToast); } catch (err) { console.error(err); }
+        if (seq !== fetchSeq) return;                   // มีการดึงใหม่กว่าแล้ว ทิ้งผลเก่า
+        if (inFlight > 0 && !opts.initial) return;      // กำลังเขียนข้อมูลอยู่ รอรอบหลัง กันข้อมูลเก่าทับ
+        let ok = false;
+        try { ok = processFetchedData(data, showToast); } catch (err) { console.error(err); }
+        if (ok) {
+          if (opts.onSuccess) opts.onSuccess();
+        } else {
+          fail(data && data.message ? data.message : 'ข้อมูลที่ได้รับจาก Google Sheets ไม่ถูกต้อง');
+        }
       };
 
       fetch(url, { cache: 'no-store' })
         .then(res => res.json())
         .then(onData)
-        .catch(() => fetchViaJsonp(url, onData, showToast));
+        .catch(() => fetchViaJsonp(url, onData, showToast, fail));
     }
 
     // สำรองสำหรับเบราว์เซอร์ที่ fetch ข้ามโดเมนไม่ได้ (เช่น Safari บางกรณี)
-    function fetchViaJsonp(url, onData, showToast) {
+    function fetchViaJsonp(url, onData, showToast, onFail) {
       const old = document.getElementById('gas-jsonp-script');
       if (old) old.remove();
 
@@ -1492,29 +1560,28 @@
         delete window[cbName];
         script.remove();
         if (showToast) Toast.fire({ icon: 'error', title: 'เชื่อมต่อ Google Sheets ไม่ได้' });
+        if (onFail) onFail('ไม่สามารถเชื่อมต่อ Google Sheets ได้ (ตรวจสอบว่า Deploy เป็น Anyone และใช้ URL ล่าสุด)');
       };
       script.src = url + '&callback=' + cbName;
       document.body.appendChild(script);
     }
 
     function processFetchedData(data, showToast) {
-      if (!data || data.status === 'ERROR') {
+      if (!data || data.status === 'ERROR' || !Array.isArray(data.rooms) || !Array.isArray(data.users) || !Array.isArray(data.bookings)) {
         if (showToast) Toast.fire({ icon: 'error', title: 'ดึงข้อมูลไม่สำเร็จ', text: data && data.message ? data.message : '' });
-        return;
+        return false;
       }
 
       if (Array.isArray(data.rooms) && data.rooms.length >= 1) {
         rooms = data.rooms.slice(1)
           .filter(r => String(r[0]).trim() !== '')
           .map(r => ({ id: String(r[0]).trim(), name: r[1], capacity: r[2], equipment: r[3], status: String(r[4]).trim() }));
-        saveLS('mr_rooms', rooms);
       }
 
       if (Array.isArray(data.users) && data.users.length >= 1) {
         users = data.users.slice(1)
           .filter(u => String(u[0]).trim() !== '')
           .map(u => ({ id: String(u[0]).trim(), name: u[1], email: u[2], password: String(u[3]).trim(), dept: u[4], role: String(u[5]).trim().toUpperCase() }));
-        saveLS('mr_users', users);
       }
 
       if (Array.isArray(data.bookings) && data.bookings.length >= 1) {
@@ -1538,7 +1605,6 @@
               createdAt: b[11]
             };
           });
-        saveLS('mr_bookings', bookings);
 
         // ตรวจว่ารายการที่เพิ่งจองถูกบันทึกจริงหรือไม่ (เช่น ถูกคนอื่นจองตัดหน้า)
         if (pendingAddIds.size > 0) {
@@ -1579,6 +1645,7 @@
       if (showToast) {
         Toast.fire({ icon: 'success', title: 'ซิงค์ข้อมูลจาก Google Sheets สำเร็จ' });
       }
+      return true;
     }
 
     // ส่งคำสั่งเขียนข้อมูล แล้วดึงข้อมูลล่าสุดกลับมาหลังคำสั่งสุดท้ายเสร็จ
