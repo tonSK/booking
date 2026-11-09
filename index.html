@@ -314,7 +314,7 @@
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">วันที่ต้องการจอง <span class="text-red-500">*</span></label>
           <input type="date" id="bookDate" onchange="checkTimeSlotAvailability()" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
-          <p id="bookingDateWarning" class="text-xs text-amber-600 mt-1 hidden"></p>
+          <p id="bookingDateWarning" class="text-xs text-amber-600 font-semibold mt-1 hidden"></p>
         </div>
 
         <div>
@@ -377,8 +377,8 @@
         <!-- หลักเกณฑ์การขอใช้ห้องประชุม -->
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 space-y-1">
           <p class="font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i>หลักเกณฑ์การขอใช้ห้องประชุม</p>
-          <p>1. กรณีจอง ล่วงหน้าอย่างน้อย 3 วัน</p>
-          <p>2. กรณีขอยกเลิก ล่วงหน้าอย่างน้อย 1 วัน</p>
+          <p>1. สามารถจองล่วงหน้าได้ไม่เกิน 30 วัน</p>
+          <p>2. สิทธิ์ในการลบหรือยกเลิกการจองเป็นของผู้ดูแลระบบ (Admin) เท่านั้น</p>
           <p>3. หลังเลิกประชุมให้ปิดระบบแสงสว่าง/เครื่องปรับอากาศและปิดประตูเข้า-ออกทุกจุดให้เรียบร้อย</p>
           <p>4. แจ้งผู้ดูแลห้องประชุม/ผู้บริหารสาขา เมื่อใช้ห้องประชุมเสร็จทุกครั้ง เพื่อตรวจสอบความเรียบร้อยเกี่ยวกับอุปกรณ์ภายในห้องประชุม และบริเวณโดยรอบ หากมีความเสียหายเกิดขึ้น ในกรณีที่ความเสียหายนั้นมิได้เกิดจากการเสื่อมสภาพตามอายุการใช้งาน ผู้ขอใช้ห้องประชุมจะต้องรับผิดชอบทั้งหมด</p>
         </div>
@@ -561,16 +561,19 @@
     function sameId(a, b) { return String(a).trim() === String(b).trim(); }
 
     function minBookingOffset() { return 0; }
-    function canBookDate(dateStr) { return daysUntil(dateStr) >= minBookingOffset(); }
+    function maxBookingOffset() { return 30; } // จองล่วงหน้าได้ไม่เกิน 30 วัน
+    
+    function canBookDate(dateStr) { 
+      const diff = daysUntil(dateStr);
+      return diff >= minBookingOffset() && diff <= maxBookingOffset(); 
+    }
 
     function isOwner(b) { return !!currentUser && sameId(b.userId, currentUser.id); }
 
-    // ปรับให้สามารถยกเลิกการจองได้ตั้งแต่วันที่ปัจจุบันเป็นต้นไป (ไม่ให้ยกเลิกรายการย้อนหลังที่ผ่านมาแล้ว)
+    // อนุญาตให้ยกเลิกการจองได้เฉพาะ Admin เท่านั้น
     function canCancelBooking(b) {
       if (!currentUser) return false;
-      if (isAdmin()) return daysUntil(b.date) >= 0;
-      if (!isOwner(b)) return false;
-      return daysUntil(b.date) >= 0;
+      return isAdmin();
     }
 
     function getBookingFor(roomId, dateStr, slot) {
@@ -835,11 +838,20 @@
 
     function quickBookIntent(roomId, dateStr) {
       if (!currentUser) { requireLogin(); return; }
-      if (!canBookDate(dateStr)) {
+      const diff = daysUntil(dateStr);
+      if (diff < minBookingOffset()) {
         Swal.fire({
           icon: 'warning',
           title: 'ไม่สามารถจองได้',
           text: 'ไม่สามารถจองย้อนหลังได้'
+        });
+        return;
+      }
+      if (diff > maxBookingOffset()) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ไม่สามารถจองได้',
+          text: 'ไม่สามารถจองล่วงหน้าเกิน 30 วันได้'
         });
         return;
       }
@@ -948,7 +960,7 @@
         const diff = daysUntil(dateStr);
         const isPast = diff < 0;
 
-        const canQuickBook = currentUser ? diff >= minBookingOffset() : diff >= 0;
+        const canQuickBook = currentUser ? canBookDate(dateStr) : diff >= 0 && diff <= maxBookingOffset();
 
         const mBk = room ? getBookingFor(room.id, dateStr, 'MORNING') : null;
         const aBk = room ? getBookingFor(room.id, dateStr, 'AFTERNOON') : null;
@@ -1008,7 +1020,9 @@
 
       const dateInput = document.getElementById('bookDate');
       const minDate = addDaysStr(getTodayStr(), minBookingOffset());
+      const maxDate = addDaysStr(getTodayStr(), maxBookingOffset());
       dateInput.min = minDate;
+      dateInput.max = maxDate;
       dateInput.value = dateStr || minDate;
 
       resetBookingForm();
@@ -1029,8 +1043,12 @@
 
       if (!roomId || !date) return;
 
-      if (currentUser && !canBookDate(date)) {
+      const diff = daysUntil(date);
+      if (diff < minBookingOffset()) {
         warningEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>ไม่สามารถจองย้อนหลังได้';
+        warningEl.classList.remove('hidden');
+      } else if (diff > maxBookingOffset()) {
+        warningEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>ไม่สามารถจองล่วงหน้าเกิน 30 วันได้';
         warningEl.classList.remove('hidden');
       } else {
         warningEl.classList.add('hidden');
@@ -1084,11 +1102,21 @@
         Swal.fire({ icon: 'warning', title: 'กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง' });
         return;
       }
-      if (!canBookDate(date)) {
+
+      const diff = daysUntil(date);
+      if (diff < minBookingOffset()) {
         Swal.fire({
           icon: 'error',
           title: 'ไม่สามารถจองได้',
           text: 'ไม่สามารถจองย้อนหลังได้'
+        });
+        return;
+      }
+      if (diff > maxBookingOffset()) {
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่สามารถจองได้',
+          text: 'สามารถจองล่วงหน้าได้ไม่เกิน 30 วันเท่านั้น'
         });
         return;
       }
@@ -1179,9 +1207,9 @@
 
         let actionHtml = '<span class="text-slate-300">-</span>';
         if (canCancelBooking(b)) {
-          actionHtml = `<button data-id="${esc(b.id)}" onclick="deleteBooking(this.dataset.id)" class="text-red-500 hover:text-red-700 p-1" title="ยกเลิกการจอง"><i class="fa-solid fa-trash-can"></i></button>`;
-        } else if (isOwner(b)) {
-          actionHtml = '<span class="text-slate-300" title="เลยกำหนดขอยกเลิก (ไม่สามารถยกเลิกรายการย้อนหลังได้)"><i class="fa-solid fa-lock"></i></span>';
+          actionHtml = `<button data-id="${esc(b.id)}" onclick="deleteBooking(this.dataset.id)" class="text-red-500 hover:text-red-700 p-1" title="ลบการจอง (Admin)"><i class="fa-solid fa-trash-can"></i></button>`;
+        } else {
+          actionHtml = '<span class="text-slate-300 cursor-not-allowed" title="เฉพาะ Admin เท่านั้นที่สามารถยกเลิก/ลบการจองได้"><i class="fa-solid fa-lock"></i></span>';
         }
 
         return `
@@ -1209,22 +1237,22 @@
       if (!canCancelBooking(b)) {
         Swal.fire({
           icon: 'warning',
-          title: 'ไม่สามารถยกเลิกได้',
-          text: 'ไม่สามารถยกเลิกรายการย้อนหลังที่ผ่านมาแล้วได้'
+          title: 'ไม่สามารถลบการจองได้',
+          text: 'สิทธิ์ในการลบหรือยกเลิกการจองเป็นของผู้ดูแลระบบ (Admin) เท่านั้น'
         });
         return;
       }
 
       const room = rooms.find(r => sameId(r.id, b.roomId));
       Swal.fire({
-        title: 'ยกเลิกการจอง?',
+        title: 'ยืนยันการลบการจอง?',
         html: `${esc(formatShortThaiDate(b.date))} • ${String(b.slot).trim() === 'MORNING' ? 'ช่วงเช้า' : 'ช่วงบ่าย'}<br>${room ? esc(room.name) : ''}<br><span class="text-sm text-slate-500">${esc(b.title)}</span>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#64748b',
-        confirmButtonText: 'ยกเลิกรายการ',
-        cancelButtonText: 'ปิด'
+        confirmButtonText: 'ลบรายการจอง',
+        cancelButtonText: 'ยกเลิก'
       }).then((result) => {
         if (result.isConfirmed) {
           bookings = bookings.filter(x => !sameId(x.id, id));
@@ -1232,7 +1260,7 @@
           sendToGoogleSheets('DELETE_BOOKING', { id: id });
           renderMonthlyCalendar();
           renderBookingsTable();
-          Toast.fire({ icon: 'success', title: 'ยกเลิกรายการจองเรียบร้อยแล้ว' });
+          Toast.fire({ icon: 'success', title: 'ลบรายการจองเรียบร้อยแล้ว' });
         }
       });
     }
